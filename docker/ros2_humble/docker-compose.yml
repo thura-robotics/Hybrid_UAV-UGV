@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  ros2:
+    image: morphobot-ros2:humble
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: morphobot_ros2
+    volumes:
+      - ../../software/morphobot_ws:/morphobot_ws
+    tty: true
+    stdin_open: true
+    network_mode: host
