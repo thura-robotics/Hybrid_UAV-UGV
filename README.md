@@ -17,10 +17,10 @@ This project develops a **transformable hybrid UAV-UGV platform** capable of aer
 ## 👥 Team Structure
 | Role | Responsibility |
 |----|---------------|
-| Software Engineer | ROS 2, perception, vision, locomotion |
-| Electrical Engineer | Schematics, PCB, power systems |
-| Low-Level Engineer | PX4, ArduPilot, MAVLink, servos |
-| Mechanical Engineer | CAD, FEA, manufacturing |
+| Hnin Ei San | ROS 2, perception, vision, locomotion |
+| Thura Zaw | Schematics, PCB, power systems |
+| Lamin Myat | PX4, Skydroid, low-level, firmware |
+| Swan Pyae Sone | CAD, FEA, manufacturing |
 
 ---
 
@@ -32,5 +32,5 @@ This project develops a **transformable hybrid UAV-UGV platform** capable of aer
 
 ### Clone Repository
 ```bash
-git clone https://github.com/your-org/hybrid-uav-ugv-morphobot.git
-cd hybrid-uav-ugv-morphobot
+git clone https://github.com/thura-robotics/Hybrid_UAV-UGV.git
+cd Hybrid_UAV-UGV
