@@ -1,14 +1,16 @@
-version: "3.9"
-
 services:
   ros2:
     image: morphobot-ros2:humble
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: morphobot_ros2
+    runtime: nvidia
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
     volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ../../software/morphobot_ws:/morphobot_ws
+    network_mode: host
     tty: true
     stdin_open: true
-    network_mode: host
