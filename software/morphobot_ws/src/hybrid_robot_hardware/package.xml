@@ -17,6 +17,13 @@
   <test_depend>python3-pytest</test_depend>
   <exec_depend>python3-serial</exec_depend>
 
+  <depend>urdf</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>controller_manager</depend>
+  <depend>joint_state_broadcaster</depend>
+  <depend>joint_trajectory_controller</depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>

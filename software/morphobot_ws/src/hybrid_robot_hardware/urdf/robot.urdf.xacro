@@ -1,0 +1,200 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="st3215_robot">
+
+  <!-- Base link -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.3 0.3 0.1"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.3 0.3 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Macro for creating servo joints and links -->
+  <xacro:macro name="servo_joint" params="id parent">
+    <link name="servo_link_${id}">
+      <visual>
+        <geometry>
+          <cylinder radius="0.025" length="0.05"/>
+        </geometry>
+        <material name="blue">
+          <color rgba="0.2 0.2 0.8 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.025" length="0.05"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.1"/>
+        <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+      </inertial>
+    </link>
+
+    <joint name="servo_joint_${id}" type="revolute">
+      <parent link="${parent}"/>
+      <child link="servo_link_${id}"/>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0" upper="6.28" effort="10.0" velocity="3.14"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Create 12 servo joints -->
+  <xacro:servo_joint id="1" parent="base_link"/>
+  <xacro:servo_joint id="2" parent="base_link"/>
+  <xacro:servo_joint id="3" parent="base_link"/>
+  <xacro:servo_joint id="4" parent="base_link"/>
+  <xacro:servo_joint id="5" parent="base_link"/>
+  <xacro:servo_joint id="6" parent="base_link"/>
+  <xacro:servo_joint id="7" parent="base_link"/>
+  <xacro:servo_joint id="8" parent="base_link"/>
+  <xacro:servo_joint id="9" parent="base_link"/>
+  <xacro:servo_joint id="10" parent="base_link"/>
+  <xacro:servo_joint id="11" parent="base_link"/>
+  <xacro:servo_joint id="12" parent="base_link"/>
+
+  <!-- ros2_control hardware interface -->
+  <ros2_control name="ST3215HardwareInterface" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+      <param name="mock_sensor_commands">false</param>
+      <param name="state_following">true</param>
+    </hardware>
+
+    <!-- Servo 1 -->
+    <joint name="servo_joint_1">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 2 -->
+    <joint name="servo_joint_2">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 3 -->
+    <joint name="servo_joint_3">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 4 -->
+    <joint name="servo_joint_4">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 5 -->
+    <joint name="servo_joint_5">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 6 -->
+    <joint name="servo_joint_6">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 7 -->
+    <joint name="servo_joint_7">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 8 -->
+    <joint name="servo_joint_8">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 9 -->
+    <joint name="servo_joint_9">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 10 -->
+    <joint name="servo_joint_10">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 11 -->
+    <joint name="servo_joint_11">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo 12 -->
+    <joint name="servo_joint_12">
+      <command_interface name="position">
+        <param name="min">0</param>
+        <param name="max">6.28</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+  </ros2_control>
+
+</robot>
