@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'motor_driver = hybrid_robot_hardware.motor_driver:main',
+            'mock_motor_driver = hybrid_robot_hardware.mock_motor_driver:main',
         ],
     },
 )
