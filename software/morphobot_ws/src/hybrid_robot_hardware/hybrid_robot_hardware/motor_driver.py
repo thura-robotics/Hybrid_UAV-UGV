@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# This is for ros2_control
 import serial
 import time
 import rclpy
@@ -31,9 +31,9 @@ class ST3215Serial:
         pos_h = (position >> 8) & 0xFF
 
         # Build command packet
-        HEADER = [0x55, 0x55]
+        HEADER = [0xFF, 0xFF]  # Correct header for ST3215
         INSTRUCTION = 0x03  # WRITE
-        ADDR_POSITION = 0x2A
+        ADDR_POSITION = 0x2A  # Target position address
         LENGTH = 5
 
         packet = [
@@ -54,9 +54,9 @@ class ST3215Serial:
         Read current position from servo.
         Returns position (0-4095) or -1 on failure.
         """
-        HEADER = [0x55, 0x55]
+        HEADER = [0xFF, 0xFF]  # Correct header for ST3215
         INSTRUCTION = 0x02  # READ
-        ADDR_POSITION = 0x2A
+        ADDR_POSITION = 0x38  # Current position address (not 0x2A!)
         SIZE = 2
         LENGTH = 4
 
@@ -73,6 +73,9 @@ class ST3215Serial:
 
         self.serial.reset_input_buffer()
         self.serial.write(bytearray(full_packet))
+        
+        # Small delay for servo response
+        time.sleep(0.01)
 
         response = self.serial.read(8)
 
@@ -89,7 +92,12 @@ class WaveshareST3215HardwareInterface:
     """
     Hardware interface for ros2_control.
     Implements read() and write() methods.
+    
+    WORKAROUND_MODE: Set to True to bypass half-duplex read issue.
+    This tracks commanded positions instead of reading actual positions.
     """
+    WORKAROUND_MODE = True  # Set to False when half-duplex hardware is fixed
+    
     def __init__(self, port='/dev/ttyUSB0', baudrate=1000000, servo_ids=None):
         if servo_ids is None:
             servo_ids = list(range(1, 13))  # Default 1-12
@@ -104,6 +112,9 @@ class WaveshareST3215HardwareInterface:
         # Previous positions for velocity calculation
         self._prev_positions = {sid: 0.0 for sid in servo_ids}
         self._prev_time = time.time()
+        
+        # Workaround: simulated positions (gradually move toward target)
+        self._simulated_positions = {sid: 0.0 for sid in servo_ids}  # radians
 
     def _ticks_to_radians(self, ticks):
         """Convert servo ticks (0-4095) to radians (0-2π)"""
@@ -119,21 +130,60 @@ class WaveshareST3215HardwareInterface:
         """
         Read actual position from each servo.
         Updates current_positions and current_velocities.
+        
+        WORKAROUND MODE: Simulates positions moving toward targets.
         """
         current_time = time.time()
         dt = current_time - self._prev_time
         
-        for sid in self.servo_ids:
-            ticks = self.driver.read_position(sid)
-            if ticks != -1:
-                pos_rad = self._ticks_to_radians(ticks)
-                self.current_positions[sid] = pos_rad
+        if self.WORKAROUND_MODE:
+            # Workaround: Simulate gradual movement toward target
+            # ST3215 servos move at ~0.17s/60° at max speed
+            # That's ~6.1 rad/s max angular velocity
+            MAX_VELOCITY = 6.0  # rad/s
+            
+            for sid in self.servo_ids:
+                target = self.target_positions[sid]
+                current = self._simulated_positions[sid]
                 
-                # Calculate velocity
+                # Calculate error
+                error = target - current
+                
+                # Normalize to [-π, π]
+                while error > 3.14159265359:
+                    error -= 2 * 3.14159265359
+                while error < -3.14159265359:
+                    error += 2 * 3.14159265359
+                
+                # Move toward target with max velocity limit
                 if dt > 0:
-                    self.current_velocities[sid] = (pos_rad - self._prev_positions[sid]) / dt
-                
-                self._prev_positions[sid] = pos_rad
+                    max_step = MAX_VELOCITY * dt
+                    step = max(-max_step, min(max_step, error))
+                    self._simulated_positions[sid] += step
+                    
+                    # Normalize position to [0, 2π]
+                    self._simulated_positions[sid] = self._simulated_positions[sid] % (2 * 3.14159265359)
+                    
+                    # Update current position
+                    self.current_positions[sid] = self._simulated_positions[sid]
+                    
+                    # Calculate velocity
+                    self.current_velocities[sid] = (self.current_positions[sid] - self._prev_positions[sid]) / dt
+                    
+                    self._prev_positions[sid] = self.current_positions[sid]
+        else:
+            # Real hardware read (requires half-duplex fix)
+            for sid in self.servo_ids:
+                ticks = self.driver.read_position(sid)
+                if ticks != -1:
+                    pos_rad = self._ticks_to_radians(ticks)
+                    self.current_positions[sid] = pos_rad
+                    
+                    # Calculate velocity
+                    if dt > 0:
+                        self.current_velocities[sid] = (pos_rad - self._prev_positions[sid]) / dt
+                    
+                    self._prev_positions[sid] = pos_rad
         
         self._prev_time = current_time
         return self.current_positions
