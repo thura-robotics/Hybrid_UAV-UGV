@@ -40,10 +40,11 @@ def main():
     # ---------------- Rotation mode ----------------
     start = servo.ReadPosition(SERVO_ID)
     print(f"Rotate CW start: {start}")
-
+    print("Servo mode :", servo.ReadMode(SERVO_ID))
     servo.Rotate(SERVO_ID, ROTATE_SPEED)
     time.sleep(3)
     servo.Rotate(SERVO_ID, 0)
+    time.sleep(0.5)  # Allow servo to stabilize after stopping rotation
 
     end = servo.ReadPosition(SERVO_ID)
     print_move("Rotate CW", start, end)
@@ -52,12 +53,13 @@ def main():
     servo.Rotate(SERVO_ID, -ROTATE_SPEED)
     time.sleep(3)
     servo.Rotate(SERVO_ID, 0)
+    time.sleep(0.5)  # Allow servo to stabilize after stopping rotation
 
     end = servo.ReadPosition(SERVO_ID)
     print_move("Rotate CCW", start, end)
 
     # ---------------- Position mode ----------------
-    
+    print("Servo mode :", servo.ReadMode(SERVO_ID))
     current = servo.ReadPosition(SERVO_ID)
     print(f"\nStart position: {current}")
 

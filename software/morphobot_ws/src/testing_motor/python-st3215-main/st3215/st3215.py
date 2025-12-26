@@ -410,7 +410,7 @@ class ST3215(protocol_packet_handler):
 
 
 
-    def MoveTo(self, sts_id, position, speed = 2400, acc = 50, wait = False):
+    def MoveTo(self, sts_id, position, speed = 3300, acc = 10, wait = False):
         """
         Move the servo to a pre defined position
 
@@ -424,6 +424,7 @@ class ST3215(protocol_packet_handler):
         """
 
         res_mode = self.SetMode(sts_id, 0)
+        time.sleep(0.5)  # Allow time for mode switch (increased from 0.2)
         res_acc = self.SetAcceleration(sts_id, acc)
         res_speed = self.SetSpeed(sts_id, speed)
 

@@ -12,12 +12,22 @@ SERVO_ID = 1
 def main():
     print("=== ST3215 SET MIDDLE POSITION ===")
 
-    device = os.getenv("ST3215_DEV")
-    if not device:
-        print("ST3215_DEV not set")
-        sys.exit(1)
+    # device = os.getenv("ST3215_DEV")
+    # if not device:
+    #     print("ST3215_DEV not set")
+    #     sys.exit(1)
 
-    servo = ST3215(device)
+    DEVICENAME = "/dev/ttyUSB0"
+    sts_id = 1
+
+# ---- create object (THIS replaces self) ----
+    
+
+
+
+
+
+    servo = ST3215(DEVICENAME)
     print("✓ Connected")
 
     # Disable torque
