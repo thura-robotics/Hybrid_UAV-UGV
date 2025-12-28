@@ -20,10 +20,10 @@ servo_id = ids[0]  # Use first servo
 print(f"Using servo ID: {servo_id}")
 
 # Setup (torque + position mode)
-servo.StartServo(servo_id)
-servo.SetMode(servo_id, 0)
-servo.SetSpeed(servo_id, 2000)
-servo.SetAcceleration(servo_id, 50)
+# servo.StartServo(servo_id)
+# servo.SetMode(servo_id, 0)
+# servo.SetSpeed(servo_id, 3000)
+# servo.SetAcceleration(servo_id, 50)
 
 print("2000 → 1000 → 2000\n")
 
@@ -34,20 +34,15 @@ for i, target_position in enumerate(positions, 1):
     
     
     # Original position
-    orig_pos = servo.ReadPosition(servo_id)
-    print(f"Original position: {orig_pos}")
+    
     success = servo.MoveTo(servo_id, target_position, speed=3500, acc=50, wait=True)
     # print(f"✅ {'Move OK' if success else '❌ Move failed'}")
     
-    
+    orig_pos = servo.ReadPosition(servo_id)
+    print(f"Original position: {orig_pos}")
     # first_pos = servo.ReadPosition(servo_id)
     # mode = servo.ReadMode(servo_id)
-    second_pos = servo.ReadPosition(servo_id)
-    
-    # print(f"First position:  {first_pos}")
-    # print(f"Mode:           {mode} (should be 0)")
-    print(f"Second position:{second_pos}")
     
     
-    time.sleep(1)  # Pause between moves
+     # Pause between moves
 

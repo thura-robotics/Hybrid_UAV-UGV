@@ -48,7 +48,7 @@ class ST3215(protocol_packet_handler):
         :return: A list of servo ID
         """
         servos=[]
-        for id in range(0, 254):
+        for id in range(0, 12):
             if self.PingServo(id):
                 servos.append(id)
 
@@ -410,7 +410,7 @@ class ST3215(protocol_packet_handler):
 
 
 
-    def MoveTo(self, sts_id, position, speed = 3300, acc = 10, wait = False):
+    def MoveTo(self, sts_id, position, speed , acc , wait = False):
         """
         Move the servo to a pre defined position
 
@@ -424,7 +424,7 @@ class ST3215(protocol_packet_handler):
         """
 
         res_mode = self.SetMode(sts_id, 0)
-        time.sleep(0.5)  # Allow time for mode switch (increased from 0.2)
+        time.sleep(0.01)  # Allow time for mode switch (reduced for faster response)
         res_acc = self.SetAcceleration(sts_id, acc)
         res_speed = self.SetSpeed(sts_id, speed)
 
