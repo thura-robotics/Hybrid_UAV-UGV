@@ -1,25 +1,20 @@
 from setuptools import setup, find_packages
 
-# Read requirements from requirements.txt
-with open("requirements.txt", "r") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-
 setup(
-    
     name="st3215_driver",
     version="0.1.0",
     description="Python library for controlling Waveshare ST3215 serial servos",
     long_description="A Python library for controlling Waveshare ST3215 serial servos with support for position, velocity, and PWM control modes.",
-    author="Hnin Ei San",  # Update this
+    author="Hnin Ei San",
     author_email="your.email@example.com",  # Update this
-    url="https://github.com/yourusername/python-st3215",  # Update this
+    url="https://github.com/thura-robotics/Hybrid_UAV-UGV",
     license="MIT",
     
     # Package discovery
     packages=find_packages(exclude=["test", "test.*"]),
     
     # Dependencies
-    install_requires=requirements,
+    install_requires=["pyserial>=3.5"],
     python_requires=">=3.8",
     
     # Package metadata

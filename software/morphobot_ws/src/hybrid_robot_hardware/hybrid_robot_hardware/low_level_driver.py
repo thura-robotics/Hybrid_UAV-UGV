@@ -22,7 +22,7 @@ print(f"Using servo ID: {servo_id}")
 print("Setting up servo...")
 servo.StartServo(servo_id)
 servo.SetMode(servo_id, 0)  # Position mode
-servo.SetSpeed(servo_id, 3000)  # Max speed
+servo.SetSpeed(servo_id, 3500)  # Max speed
 servo.SetAcceleration(servo_id, 50)  # High acceleration
 
 print("Moving: 1000 → 500\n")

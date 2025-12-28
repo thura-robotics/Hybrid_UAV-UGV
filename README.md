@@ -30,21 +30,18 @@ This project develops a **transformable hybrid UAV-UGV platform** capable of aer
 - Docker Compose
 - Git
 
-### Clone Repository
-```bash
+# 1. Clone repository
 git clone https://github.com/thura-robotics/Hybrid_UAV-UGV.git
 cd Hybrid_UAV-UGV
 
+# 2. Install Python dependencies
+pip3 install --user -r requirements.txt
 
-# Hybrid UAV-UGV Robot Setup
-## Prerequisites
-- Ubuntu 22.04
-- ROS 2 Humble
-## Installation
-### 1. Install ROS 2 Humble
-Follow: https://docs.ros.org/en/humble/Installation.html
-
-# Install st3215 package (goes to their ~/.local/)
-cd software/morphobot_ws/src/python-st3215-main
+# 3. Install st3215_driver (pure Python package)
+cd software/st3215_driver
 pip3 install --user -e .
 
+# 4. Build ROS 2 workspace
+cd ../morphobot_ws
+colcon build --symlink-install
+source install/setup.bash
