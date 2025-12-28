@@ -5,11 +5,12 @@ with open("requirements.txt", "r") as f:
     requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
 setup(
-    name="python-st3215",
+    
+    name="st3215_driver",
     version="0.1.0",
     description="Python library for controlling Waveshare ST3215 serial servos",
     long_description="A Python library for controlling Waveshare ST3215 serial servos with support for position, velocity, and PWM control modes.",
-    author="Your Name",  # Update this
+    author="Hnin Ei San",  # Update this
     author_email="your.email@example.com",  # Update this
     url="https://github.com/yourusername/python-st3215",  # Update this
     license="MIT",

@@ -1,0 +1,9 @@
+# Python dependencies for Hybrid UAV-UGV Robot
+# Install with: pip3 install --user -r requirements.txt
+
+# Servo control
+pyserial>=3.5
+
+# Add other dependencies here as needed
+# numpy>=1.21.0
+# scipy>=1.7.0
