@@ -45,3 +45,17 @@ pip3 install --user -e .
 cd ../morphobot_ws
 colcon build --symlink-install
 source install/setup.bash
+
+
+# Install ROS 2 Control packages
+Run these commands to install ROS 2 Control packages system-wide:
+sudo apt update
+sudo apt install -y \
+  ros-humble-ros2-control \
+  ros-humble-ros2-controllers \
+  ros-humble-controller-manager \
+  ros-humble-joint-state-broadcaster \
+  ros-humble-velocity-controllers \
+  ros-humble-position-controllers
+# Verify installation
+ros2 pkg list | grep controller

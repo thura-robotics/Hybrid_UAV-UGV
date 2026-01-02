@@ -15,7 +15,7 @@ if not ids:
     print("❌ No servos found!")
     exit()
 
-servo_id = ids[0]  # Use first servo
+servo_id = ids[2]  # Use first servo
 print(f"Using servo ID: {servo_id}")
 
 # Setup ONCE (torque + position mode + speed + acceleration)
