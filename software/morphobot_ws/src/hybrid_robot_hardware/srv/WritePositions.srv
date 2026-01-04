@@ -1,0 +1,7 @@
+# Request: servo IDs and target positions in ticks
+int32[] servo_ids
+int32[] positions
+---
+# Response
+bool success
+string message

@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
 """
 Launch file for ST3215 hardware interface with ROS 2 Control.
-Starts the hardware interface, controller manager, and controllers.
+Starts Python service node, hardware interface, controller manager, and controllers.
 """
 
 import os
 from launch import LaunchDescription
 from launch.actions import RegisterEventHandler, DeclareLaunchArgument
-from launch.event_handlers import OnProcessExit
+from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    
+    # Declare arguments
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "serial_port",
+            default_value="/dev/ttyUSB0",
+            description="Serial port for ST3215 servos",
+        )
+    )
+    
+    serial_port = LaunchConfiguration("serial_port")
     
     # Get URDF via xacro
     robot_description_content = Command(
@@ -24,7 +36,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("hybrid_robot_hardware"),
                     "urdf",
-                    "robot.urdf.xacro",
+                    "hybrid_robot.urdf.xacro",
                 ]
             ),
         ]
@@ -41,7 +53,19 @@ def generate_launch_description():
         ]
     )
 
-    # Controller manager node
+    # ST3215 Service Node (Python) - MUST START FIRST!
+    st3215_service_node = Node(
+        package="hybrid_robot_hardware",
+        executable="st3215_service_node.py",
+        name="st3215_service_node",
+        output="both",
+        parameters=[
+            {"serial_port": serial_port},
+            {"servo_ids": [1, 3, 4]},
+        ],
+    )
+
+    # Controller manager node (starts after service node)
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -67,41 +91,35 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
-    # Velocity controller spawner (for driving servo)
-    velocity_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["velocity_controller", "--controller-manager", "/controller_manager"],
-    )
-
-    # Position controller spawner (for pan/tilt servos)
+    # Position controller spawner
     position_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["position_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Delay controller spawners until joint_state_broadcaster is active
-    delay_velocity_controller_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[velocity_controller_spawner],
+    # Delay control node start until service node is ready (give it 2 seconds)
+    delay_control_node_after_service = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=st3215_service_node,
+            on_start=[control_node],
         )
     )
 
+    # Delay position controller spawner after joint state broadcaster
     delay_position_controller_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
-            target_action=velocity_controller_spawner,
+            target_action=joint_state_broadcaster_spawner,
             on_exit=[position_controller_spawner],
         )
     )
 
     nodes = [
-        control_node,
+        st3215_service_node,
+        delay_control_node_after_service,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_velocity_controller_spawner,
         delay_position_controller_spawner,
     ]
 
-    return LaunchDescription(nodes)
+    return LaunchDescription(declared_arguments + nodes)

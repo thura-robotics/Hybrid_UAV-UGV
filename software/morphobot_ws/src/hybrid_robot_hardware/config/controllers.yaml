@@ -1,30 +1,28 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz
-    
-    # Joint state broadcaster - publishes all joint states
+    update_rate: 50  # Hz
+
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
-    
-    # Velocity controller for driving servo
-    velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
-    
-    # Position controller for pan/tilt servos
+
     position_controller:
-      type: position_controllers/JointGroupPositionController
+      type: forward_command_controller/ForwardCommandController
 
-# Velocity controller configuration
-velocity_controller:
-  ros__parameters:
-    joints:
-      - wheel_fl_joint
-    interface_name: velocity
+    velocity_controller:
+      type: forward_command_controller/ForwardCommandController
 
-# Position controller configuration
 position_controller:
   ros__parameters:
     joints:
-      - pan_fl_joint
-      - tilt_fl_joint
+      - servo_joint_1
+      - servo_joint_3
+      - servo_joint_4
     interface_name: position
+
+velocity_controller:
+  ros__parameters:
+    joints:
+      - servo_joint_1
+      - servo_joint_3
+      - servo_joint_4
+    interface_name: velocity
