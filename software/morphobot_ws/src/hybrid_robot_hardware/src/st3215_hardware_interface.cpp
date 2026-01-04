@@ -17,6 +17,7 @@ namespace hybrid_robot_hardware
 hardware_interface::CallbackReturn ST3215HardwareInterface::on_init(
   const hardware_interface::HardwareInfo & info)
 {
+  //Call parent class initialization
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
