@@ -71,7 +71,7 @@ install(
 
 # Install Python modules (scripts directory structure)
 install(
-  DIRECTORY hybrid_robot_hardware/
+  DIRECTORY nodes/
   DESTINATION lib/python3.10/site-packages/${PROJECT_NAME}
   PATTERN "*.pyc" EXCLUDE
   PATTERN "__pycache__" EXCLUDE
@@ -79,8 +79,7 @@ install(
 
 # Install Python executables
 install(PROGRAMS
-  hybrid_robot_hardware/motor_driver.py
-  hybrid_robot_hardware/st3215_service_node.py
+  nodes/st3215_service_node.py
   scripts/test_servo_detection.py
   scripts/test_position_commands.py
   DESTINATION lib/${PROJECT_NAME}
