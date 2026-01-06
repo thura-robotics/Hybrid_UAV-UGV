@@ -6,7 +6,7 @@ Provides services for the C++ hardware interface to call.
 
 import rclpy
 from rclpy.node import Node
-from hybrid_robot_hardware.srv import ReadPositions, WritePositions
+from hybrid_robot_hardware.srv import ReadPositions, WritePositions, WriteVelocities, ReadVelocities
 
 try:
     from st3215 import ST3215
@@ -44,11 +44,16 @@ class ST3215ServiceNode(Node):
                     self.get_logger().error(f'Servo {sid} not detected!')
                     raise RuntimeError(f'Servo {sid} not found')
             
-            # Configure servos
+            # Configure servos - servo 1 in velocity mode, others in position mode
             for sid in self.servo_ids:
-                self.servo.SetMode(sid, 0)  # Position mode
-                self.servo.SetSpeed(sid, 2400)
-                self.servo.SetAcceleration(sid, 50)
+                if sid == 1:
+                    self.servo.SetMode(sid, 1)  # Velocity mode for servo 1
+                    self.get_logger().info(f'Servo {sid} configured for velocity mode')
+                else:
+                    self.servo.SetMode(sid, 0)  # Position mode for others
+                    self.servo.SetSpeed(sid, 2400)
+                    self.servo.SetAcceleration(sid, 50)
+                    self.get_logger().info(f'Servo {sid} configured for position mode')
             
             self.get_logger().info(f'Configured servos: {self.servo_ids}')
             
@@ -69,23 +74,42 @@ class ST3215ServiceNode(Node):
             self.write_positions_callback
         )
         
+        self.write_vel_srv = self.create_service(
+            WriteVelocities,
+            'st3215/write_velocities',
+            self.write_velocities_callback
+        )
+        
+        self.read_vel_srv = self.create_service(
+            ReadVelocities,
+            'st3215/read_velocities',
+            self.read_velocities_callback
+        )
+        
         self.get_logger().info('ST3215 service node ready!')
         self.get_logger().info('Services:')
         self.get_logger().info('  - /st3215/read_positions')
         self.get_logger().info('  - /st3215/write_positions')
+        self.get_logger().info('  - /st3215/write_velocities')
+        self.get_logger().info('  - /st3215/read_velocities')
     
     def read_positions_callback(self, request, response):
         """Read positions from specified servos."""
         try:
             positions = []
             for servo_id in request.servo_ids:
-                pos = self.servo.ReadPosition(servo_id)
-                if pos is not None:
-                    positions.append(pos)
+                # Servo 1 is in velocity mode, position reading may not work reliably
+                # Return 0 as a placeholder since position is not meaningful in velocity mode
+                if servo_id == 1:
+                    positions.append(0)
                 else:
-                    response.success = False
-                    response.message = f'Failed to read servo {servo_id}'
-                    return response
+                    pos = self.servo.ReadPosition(servo_id)
+                    if pos is not None:
+                        positions.append(pos)
+                    else:
+                        response.success = False
+                        response.message = f'Failed to read servo {servo_id}'
+                        return response
             
             response.positions = positions
             response.success = True
@@ -120,6 +144,59 @@ class ST3215ServiceNode(Node):
             response.success = False
             response.message = str(e)
             self.get_logger().error(f'Write error: {e}')
+        
+        return response
+
+    def write_velocities_callback(self, request, response):
+        """Write velocities to specified servos."""
+        try:
+            if len(request.servo_ids) != len(request.velocities):
+                response.success = False
+                response.message = 'servo_ids and velocities length mismatch'
+                return response
+            
+            for servo_id, velocity in zip(request.servo_ids, request.velocities):
+                success = self.servo.Rotate(servo_id, velocity)
+                if not success:
+                    response.success = False
+                    response.message = f'Failed to write velocity to servo {servo_id}'
+                    return response
+            
+            response.success = True
+            response.message = 'OK'
+            
+        except Exception as e:
+            response.success = False
+            response.message = str(e)
+            self.get_logger().error(f'Write velocity error: {e}')
+        
+        return response
+
+    def read_velocities_callback(self, request, response):
+        """Read velocities from specified servos."""
+        try:
+            velocities = []
+            for servo_id in request.servo_ids:
+                # Only servo 1 is in velocity mode, read its speed
+                if servo_id == 1:
+                    speed_result = self.servo.ReadSpeed(servo_id)
+                    if speed_result and len(speed_result) >= 1:
+                        speed = speed_result[0]  # ReadSpeed returns (speed, comm_result, error)
+                        velocities.append(speed if speed is not None else 0)
+                    else:
+                        velocities.append(0)
+                else:
+                    # Position mode servos don't have meaningful velocity readings
+                    velocities.append(0)
+            
+            response.velocities = velocities
+            response.success = True
+            response.message = 'OK'
+            
+        except Exception as e:
+            response.success = False
+            response.message = str(e)
+            self.get_logger().error(f'Read velocity error: {e}')
         
         return response
 

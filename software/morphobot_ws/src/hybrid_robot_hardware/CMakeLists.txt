@@ -20,6 +20,8 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ReadPositions.srv"
   "srv/WritePositions.srv"
+  "srv/WriteVelocities.srv"
+  "srv/ReadVelocities.srv"
   DEPENDENCIES std_msgs
 )
 

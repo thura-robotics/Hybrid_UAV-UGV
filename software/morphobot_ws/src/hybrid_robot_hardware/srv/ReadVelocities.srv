@@ -1,0 +1,7 @@
+# Request: servo IDs to read velocities from
+int32[] servo_ids
+---
+# Response
+bool success
+string message
+int32[] velocities  # velocities in ticks/s

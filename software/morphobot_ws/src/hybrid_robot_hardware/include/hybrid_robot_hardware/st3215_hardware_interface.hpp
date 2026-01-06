@@ -16,6 +16,8 @@
 
 #include "hybrid_robot_hardware/srv/read_positions.hpp"
 #include "hybrid_robot_hardware/srv/write_positions.hpp"
+#include "hybrid_robot_hardware/srv/write_velocities.hpp"
+#include "hybrid_robot_hardware/srv/read_velocities.hpp"
 
 namespace hybrid_robot_hardware
 {
@@ -54,6 +56,8 @@ private:
   // Service clients
   rclcpp::Client<srv::ReadPositions>::SharedPtr read_client_;
   rclcpp::Client<srv::WritePositions>::SharedPtr write_client_;
+  rclcpp::Client<srv::WriteVelocities>::SharedPtr write_velocities_client_;
+  rclcpp::Client<srv::ReadVelocities>::SharedPtr read_velocities_client_;
   
   // Parameters
   std::string serial_port_;
@@ -66,6 +70,7 @@ private:
   
   // Command storage
   std::vector<double> hw_position_commands_;
+  std::vector<double> hw_velocity_commands_;
   
   // Helper functions
   double ticks_to_radians(int ticks);

@@ -322,3 +322,19 @@ The system uses a **layered architecture**:
 - ✅ Language flexibility (Python + C++)
 - ✅ Standard ROS 2 patterns
 - ✅ Full ROS 2 Control integration
+
+# Build the package 
+source /opt/ros/humble/setup.bash && source install/setup.bash
+ros2 launch hybrid_robot_hardware robot_control.launch.py
+
+
+ros2 topic echo /joint_states --once
+# Terminal 1: Keep servo 1 spinning
+ros2 topic pub /velocity_controller/commands std_msgs/msg/Float64MultiArray "data: [300]"
+
+# Terminal 2: Move servos 3 and 4
+ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArray "data: [1.0, 2.0]"
+
+# Terminal 3: Monitor commands
+ros2 topic echo /velocity_controller/commands
+ros2 topic echo /position_controller/commands

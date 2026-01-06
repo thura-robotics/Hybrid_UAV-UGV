@@ -98,6 +98,13 @@ def generate_launch_description():
         arguments=["position_controller", "--controller-manager", "/controller_manager"],
     )
 
+    # Velocity controller spawner
+    velocity_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["velocity_controller", "--controller-manager", "/controller_manager"],
+    )
+
     # Delay control node start until service node is ready (give it 2 seconds)
     delay_control_node_after_service = RegisterEventHandler(
         event_handler=OnProcessStart(
@@ -114,12 +121,21 @@ def generate_launch_description():
         )
     )
 
+    # Delay velocity controller spawner after position controller
+    delay_velocity_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=position_controller_spawner,
+            on_exit=[velocity_controller_spawner],
+        )
+    )
+
     nodes = [
         st3215_service_node,
         delay_control_node_after_service,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
         delay_position_controller_spawner,
+        delay_velocity_controller_spawner,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

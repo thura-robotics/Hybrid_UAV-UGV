@@ -49,26 +49,32 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_init(
   hw_velocities_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   hw_efforts_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   hw_position_commands_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
+  hw_velocity_commands_.resize(info_.joints.size(), 0.0);
 
   // Verify joint configuration
   for (const hardware_interface::ComponentInfo & joint : info_.joints)
   {
-    if (joint.command_interfaces.size() != 1)
+    // Check that joint has at least one command interface (position or velocity)
+    if (joint.command_interfaces.empty())
     {
       RCLCPP_FATAL(
         rclcpp::get_logger("ST3215HardwareInterface"),
-        "Joint '%s' has %zu command interfaces found. 1 expected.", joint.name.c_str(),
-        joint.command_interfaces.size());
+        "Joint '%s' has no command interfaces.", joint.name.c_str());
       return hardware_interface::CallbackReturn::ERROR;
     }
 
-    if (joint.command_interfaces[0].name != hardware_interface::HW_IF_POSITION)
+    // Verify command interfaces are either position or velocity
+    for (const auto & cmd_interface : joint.command_interfaces)
     {
-      RCLCPP_FATAL(
-        rclcpp::get_logger("ST3215HardwareInterface"),
-        "Joint '%s' has %s command interface. '%s' expected.", joint.name.c_str(),
-        joint.command_interfaces[0].name.c_str(), hardware_interface::HW_IF_POSITION);
-      return hardware_interface::CallbackReturn::ERROR;
+      if (cmd_interface.name != hardware_interface::HW_IF_POSITION &&
+          cmd_interface.name != hardware_interface::HW_IF_VELOCITY)
+      {
+        RCLCPP_FATAL(
+          rclcpp::get_logger("ST3215HardwareInterface"),
+          "Joint '%s' has unsupported command interface '%s'.",
+          joint.name.c_str(), cmd_interface.name.c_str());
+        return hardware_interface::CallbackReturn::ERROR;
+      }
     }
 
     if (joint.state_interfaces.size() != 3)
@@ -95,6 +101,8 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_configure(
   // Create service clients
   read_client_ = node_->create_client<srv::ReadPositions>("st3215/read_positions");
   write_client_ = node_->create_client<srv::WritePositions>("st3215/write_positions");
+  write_velocities_client_ = node_->create_client<srv::WriteVelocities>("st3215/write_velocities");
+  read_velocities_client_ = node_->create_client<srv::ReadVelocities>("st3215/read_velocities");
   
   // Wait for services to be available
   RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Waiting for ST3215 services...");
@@ -110,6 +118,18 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_configure(
   if (!write_client_->wait_for_service(10s)) {
     RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
                  "Service /st3215/write_positions not available!");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+  
+  if (!write_velocities_client_->wait_for_service(10s)) {
+    RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
+                 "Service /st3215/write_velocities not available!");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+  
+  if (!read_velocities_client_->wait_for_service(10s)) {
+    RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
+                 "Service /st3215/read_velocities not available!");
     return hardware_interface::CallbackReturn::ERROR;
   }
   
@@ -141,8 +161,20 @@ std::vector<hardware_interface::CommandInterface> ST3215HardwareInterface::expor
   
   for (size_t i = 0; i < info_.joints.size(); i++)
   {
-    command_interfaces.emplace_back(hardware_interface::CommandInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_position_commands_[i]));
+    // Export command interfaces based on what's defined in URDF
+    for (const auto & cmd_interface : info_.joints[i].command_interfaces)
+    {
+      if (cmd_interface.name == hardware_interface::HW_IF_POSITION)
+      {
+        command_interfaces.emplace_back(hardware_interface::CommandInterface(
+          info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_position_commands_[i]));
+      }
+      else if (cmd_interface.name == hardware_interface::HW_IF_VELOCITY)
+      {
+        command_interfaces.emplace_back(hardware_interface::CommandInterface(
+          info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &hw_velocity_commands_[i]));
+      }
+    }
   }
 
   return command_interfaces;
@@ -204,18 +236,16 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_deactivate(
 hardware_interface::return_type ST3215HardwareInterface::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // Create request
-  auto request = std::make_shared<srv::ReadPositions::Request>();
-  request->servo_ids = servo_ids_;
+  // Read positions
+  auto pos_request = std::make_shared<srv::ReadPositions::Request>();
+  pos_request->servo_ids = servo_ids_;
   
-  // Call service (async)
-  auto result_future = read_client_->async_send_request(request);
+  auto pos_future = read_client_->async_send_request(pos_request);
   
-  // Wait for response with timeout
-  if (rclcpp::spin_until_future_complete(node_, result_future, 100ms) == 
+  if (rclcpp::spin_until_future_complete(node_, pos_future, 100ms) == 
       rclcpp::FutureReturnCode::SUCCESS)
   {
-    auto response = result_future.get();
+    auto response = pos_future.get();
     if (response->success && response->positions.size() == servo_ids_.size())
     {
       for (size_t i = 0; i < servo_ids_.size(); i++)
@@ -228,7 +258,7 @@ hardware_interface::return_type ST3215HardwareInterface::read(
       RCLCPP_WARN_THROTTLE(
         rclcpp::get_logger("ST3215HardwareInterface"),
         *node_->get_clock(), 1000,
-        "Read failed: %s", response->message.c_str());
+        "Read positions failed: %s", response->message.c_str());
     }
   }
   else
@@ -236,7 +266,27 @@ hardware_interface::return_type ST3215HardwareInterface::read(
     RCLCPP_WARN_THROTTLE(
       rclcpp::get_logger("ST3215HardwareInterface"),
       *node_->get_clock(), 1000,
-      "Read timeout");
+      "Read positions timeout");
+  }
+
+  // Read velocities (for servo 1 in velocity mode)
+  auto vel_request = std::make_shared<srv::ReadVelocities::Request>();
+  vel_request->servo_ids = servo_ids_;
+  
+  auto vel_future = read_velocities_client_->async_send_request(vel_request);
+  
+  if (rclcpp::spin_until_future_complete(node_, vel_future, 100ms) == 
+      rclcpp::FutureReturnCode::SUCCESS)
+  {
+    auto response = vel_future.get();
+    if (response->success && response->velocities.size() == servo_ids_.size())
+    {
+      for (size_t i = 0; i < servo_ids_.size(); i++)
+      {
+        // Convert ticks/s to rad/s (4096 ticks = 2π radians)
+        hw_velocities_[i] = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
+      }
+    }
   }
 
   return hardware_interface::return_type::OK;
@@ -245,46 +295,86 @@ hardware_interface::return_type ST3215HardwareInterface::read(
 hardware_interface::return_type ST3215HardwareInterface::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // Create request
-  auto request = std::make_shared<srv::WritePositions::Request>();
-  request->servo_ids = servo_ids_;
-  request->positions.clear();
+  // Always send velocity command to servo 1 (even if 0, to stop the motor)
+  bool has_velocity_cmd = (servo_ids_[0] == 1);
   
-  for (size_t i = 0; i < servo_ids_.size(); i++)
+  if (has_velocity_cmd)
   {
-    if (!std::isnan(hw_position_commands_[i]))
+    // Send velocity command to servo 1
+    auto vel_request = std::make_shared<srv::WriteVelocities::Request>();
+    vel_request->servo_ids.push_back(servo_ids_[0]);
+    vel_request->velocities.push_back(static_cast<int>(hw_velocity_commands_[0]));
+    
+    auto vel_future = write_velocities_client_->async_send_request(vel_request);
+    
+    if (rclcpp::spin_until_future_complete(node_, vel_future, 100ms) == 
+        rclcpp::FutureReturnCode::SUCCESS)
     {
-      request->positions.push_back(radians_to_ticks(hw_position_commands_[i]));
+      auto response = vel_future.get();
+      if (!response->success)
+      {
+        RCLCPP_WARN_THROTTLE(
+          rclcpp::get_logger("ST3215HardwareInterface"),
+          *node_->get_clock(), 1000,
+          "Velocity write failed: %s", response->message.c_str());
+      }
     }
     else
-    {
-      // If command is NaN, use current position
-      request->positions.push_back(radians_to_ticks(hw_positions_[i]));
-    }
-  }
-  
-  // Call service (async)
-  auto result_future = write_client_->async_send_request(request);
-  
-  // Wait for response with timeout
-  if (rclcpp::spin_until_future_complete(node_, result_future, 100ms) == 
-      rclcpp::FutureReturnCode::SUCCESS)
-  {
-    auto response = result_future.get();
-    if (!response->success)
     {
       RCLCPP_WARN_THROTTLE(
         rclcpp::get_logger("ST3215HardwareInterface"),
         *node_->get_clock(), 1000,
-        "Write failed: %s", response->message.c_str());
+        "Velocity write timeout");
     }
   }
-  else
+  
+  // Send position commands to servos (skip servo 1 if it has velocity command)
+  auto pos_request = std::make_shared<srv::WritePositions::Request>();
+  
+  for (size_t i = 0; i < servo_ids_.size(); i++)
   {
-    RCLCPP_WARN_THROTTLE(
-      rclcpp::get_logger("ST3215HardwareInterface"),
-      *node_->get_clock(), 1000,
-      "Write timeout");
+    // Skip servo 1 if it has an active velocity command
+    if (i == 0 && has_velocity_cmd) {
+      continue;
+    }
+    
+    pos_request->servo_ids.push_back(servo_ids_[i]);
+    
+    if (!std::isnan(hw_position_commands_[i]))
+    {
+      pos_request->positions.push_back(radians_to_ticks(hw_position_commands_[i]));
+    }
+    else
+    {
+      // If command is NaN, use current position
+      pos_request->positions.push_back(radians_to_ticks(hw_positions_[i]));
+    }
+  }
+  
+  // Only send position command if there are servos to command
+  if (!pos_request->servo_ids.empty())
+  {
+    auto pos_future = write_client_->async_send_request(pos_request);
+    
+    if (rclcpp::spin_until_future_complete(node_, pos_future, 100ms) == 
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+      auto response = pos_future.get();
+      if (!response->success)
+      {
+        RCLCPP_WARN_THROTTLE(
+          rclcpp::get_logger("ST3215HardwareInterface"),
+          *node_->get_clock(), 1000,
+          "Position write failed: %s", response->message.c_str());
+      }
+    }
+    else
+    {
+      RCLCPP_WARN_THROTTLE(
+        rclcpp::get_logger("ST3215HardwareInterface"),
+        *node_->get_clock(), 1000,
+        "Position write timeout");
+    }
   }
 
   return hardware_interface::return_type::OK;
