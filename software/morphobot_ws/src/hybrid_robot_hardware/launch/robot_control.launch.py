@@ -6,7 +6,7 @@ Starts Python service node, hardware interface, controller manager, and controll
 
 import os
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler, DeclareLaunchArgument
+from launch.actions import RegisterEventHandler, DeclareLaunchArgument, TimerAction
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
@@ -61,7 +61,9 @@ def generate_launch_description():
         output="both",
         parameters=[
             {"serial_port": serial_port},
-            {"servo_ids": [1, 3, 4]},
+            {"servo_ids": [1, 2, 3]},
+            {"position_servo_ids": [1, 2]},
+            {"velocity_servo_ids": [3]},
         ],
     )
 
@@ -105,12 +107,10 @@ def generate_launch_description():
         arguments=["velocity_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Delay control node start until service node is ready (give it 2 seconds)
-    delay_control_node_after_service = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=st3215_service_node,
-            on_start=[control_node],
-        )
+    # Delay control node start until service node is ready (give it 3 seconds)
+    delay_control_node_after_service = TimerAction(
+        period=3.0,
+        actions=[control_node],
     )
 
     # Delay position controller spawner after joint state broadcaster

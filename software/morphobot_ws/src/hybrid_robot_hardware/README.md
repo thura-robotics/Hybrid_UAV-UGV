@@ -216,3 +216,9 @@ ros2 run hybrid_robot_hardware test_position_commands.py
 
 - ST3215 servo driver library
 - ROS 2 Control framework
+
+## Build 
+colcon build --packages-select hybrid_robot_hardware --symlink-install
+
+source install/setup.bash
+ros2 launch hybrid_robot_hardware robot_control.launch.py

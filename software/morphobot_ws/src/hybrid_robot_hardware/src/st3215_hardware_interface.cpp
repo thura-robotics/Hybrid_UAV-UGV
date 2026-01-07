@@ -185,7 +185,7 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_activate(
 {
   RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Activating hardware interface...");
 
-  // Read initial positions
+  // Read initial positions (note: velocity-mode servos may return 0)
   auto request = std::make_shared<srv::ReadPositions::Request>();
   request->servo_ids = servo_ids_;
   
@@ -194,24 +194,32 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_activate(
   if (rclcpp::spin_until_future_complete(node_, result, 5s) == rclcpp::FutureReturnCode::SUCCESS)
   {
     auto response = result.get();
-    if (response->success && response->positions.size() == servo_ids_.size())
+    if (response->positions.size() == servo_ids_.size())
     {
       for (size_t i = 0; i < servo_ids_.size(); i++)
       {
         hw_positions_[i] = ticks_to_radians(response->positions[i]);
         hw_position_commands_[i] = hw_positions_[i];
         hw_velocities_[i] = 0.0;
+        hw_velocity_commands_[i] = 0.0;
         hw_efforts_[i] = 0.0;
         
         RCLCPP_INFO(
           rclcpp::get_logger("ST3215HardwareInterface"),
           "Servo %d initial position: %.3f rad", servo_ids_[i], hw_positions_[i]);
       }
+      
+      if (!response->success)
+      {
+        RCLCPP_WARN(rclcpp::get_logger("ST3215HardwareInterface"),
+                    "Position read reported issues: %s (continuing anyway)", response->message.c_str());
+      }
     }
     else
     {
       RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
-                   "Failed to read initial positions: %s", response->message.c_str());
+                   "Position array size mismatch: expected %zu, got %zu", 
+                   servo_ids_.size(), response->positions.size());
       return hardware_interface::CallbackReturn::ERROR;
     }
   }
@@ -295,15 +303,43 @@ hardware_interface::return_type ST3215HardwareInterface::read(
 hardware_interface::return_type ST3215HardwareInterface::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // Always send velocity command to servo 1 (even if 0, to stop the motor)
-  bool has_velocity_cmd = (servo_ids_[0] == 1);
+  // Determine which servos have velocity vs position command interfaces
+  std::vector<size_t> velocity_servo_indices;
+  std::vector<size_t> position_servo_indices;
   
-  if (has_velocity_cmd)
+  for (size_t i = 0; i < info_.joints.size(); i++)
   {
-    // Send velocity command to servo 1
+    bool has_velocity = false;
+    bool has_position = false;
+    
+    for (const auto & cmd_interface : info_.joints[i].command_interfaces)
+    {
+      if (cmd_interface.name == hardware_interface::HW_IF_VELOCITY) {
+        has_velocity = true;
+      }
+      if (cmd_interface.name == hardware_interface::HW_IF_POSITION) {
+        has_position = true;
+      }
+    }
+    
+    if (has_velocity) {
+      velocity_servo_indices.push_back(i);
+    }
+    if (has_position) {
+      position_servo_indices.push_back(i);
+    }
+  }
+  
+  // Send velocity commands to servos with velocity interfaces
+  if (!velocity_servo_indices.empty())
+  {
     auto vel_request = std::make_shared<srv::WriteVelocities::Request>();
-    vel_request->servo_ids.push_back(servo_ids_[0]);
-    vel_request->velocities.push_back(static_cast<int>(hw_velocity_commands_[0]));
+    
+    for (size_t idx : velocity_servo_indices)
+    {
+      vel_request->servo_ids.push_back(servo_ids_[idx]);
+      vel_request->velocities.push_back(static_cast<int>(hw_velocity_commands_[idx]));
+    }
     
     auto vel_future = write_velocities_client_->async_send_request(vel_request);
     
@@ -328,32 +364,26 @@ hardware_interface::return_type ST3215HardwareInterface::write(
     }
   }
   
-  // Send position commands to servos (skip servo 1 if it has velocity command)
-  auto pos_request = std::make_shared<srv::WritePositions::Request>();
-  
-  for (size_t i = 0; i < servo_ids_.size(); i++)
+  // Send position commands to servos with position interfaces
+  if (!position_servo_indices.empty())
   {
-    // Skip servo 1 if it has an active velocity command
-    if (i == 0 && has_velocity_cmd) {
-      continue;
+    auto pos_request = std::make_shared<srv::WritePositions::Request>();
+    
+    for (size_t idx : position_servo_indices)
+    {
+      pos_request->servo_ids.push_back(servo_ids_[idx]);
+      
+      if (!std::isnan(hw_position_commands_[idx]))
+      {
+        pos_request->positions.push_back(radians_to_ticks(hw_position_commands_[idx]));
+      }
+      else
+      {
+        // If command is NaN, use current position
+        pos_request->positions.push_back(radians_to_ticks(hw_positions_[idx]));
+      }
     }
     
-    pos_request->servo_ids.push_back(servo_ids_[i]);
-    
-    if (!std::isnan(hw_position_commands_[i]))
-    {
-      pos_request->positions.push_back(radians_to_ticks(hw_position_commands_[i]));
-    }
-    else
-    {
-      // If command is NaN, use current position
-      pos_request->positions.push_back(radians_to_ticks(hw_positions_[i]));
-    }
-  }
-  
-  // Only send position command if there are servos to command
-  if (!pos_request->servo_ids.empty())
-  {
     auto pos_future = write_client_->async_send_request(pos_request);
     
     if (rclcpp::spin_until_future_complete(node_, pos_future, 100ms) == 

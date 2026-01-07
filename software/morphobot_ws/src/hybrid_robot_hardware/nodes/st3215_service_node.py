@@ -24,10 +24,14 @@ class ST3215ServiceNode(Node):
         
         # Parameters
         self.declare_parameter('serial_port', '/dev/ttyUSB0')
-        self.declare_parameter('servo_ids', [1, 3, 4])
+        self.declare_parameter('servo_ids', [1, 2, 3])
+        self.declare_parameter('position_servo_ids', [1, 2])  # Servos in position mode
+        self.declare_parameter('velocity_servo_ids', [3])      # Servos in velocity mode
         
         port = self.get_parameter('serial_port').get_parameter_value().string_value
         self.servo_ids = self.get_parameter('servo_ids').get_parameter_value().integer_array_value
+        self.position_servo_ids = self.get_parameter('position_servo_ids').get_parameter_value().integer_array_value
+        self.velocity_servo_ids = self.get_parameter('velocity_servo_ids').get_parameter_value().integer_array_value
         
         # Initialize ST3215 driver
         try:
@@ -44,16 +48,18 @@ class ST3215ServiceNode(Node):
                     self.get_logger().error(f'Servo {sid} not detected!')
                     raise RuntimeError(f'Servo {sid} not found')
             
-            # Configure servos - servo 1 in velocity mode, others in position mode
+            # Configure servos based on position_servo_ids and velocity_servo_ids
             for sid in self.servo_ids:
-                if sid == 1:
-                    self.servo.SetMode(sid, 1)  # Velocity mode for servo 1
+                if sid in self.velocity_servo_ids:
+                    self.servo.SetMode(sid, 1)  # Velocity mode
                     self.get_logger().info(f'Servo {sid} configured for velocity mode')
-                else:
-                    self.servo.SetMode(sid, 0)  # Position mode for others
+                elif sid in self.position_servo_ids:
+                    self.servo.SetMode(sid, 0)  # Position mode
                     self.servo.SetSpeed(sid, 2400)
                     self.servo.SetAcceleration(sid, 50)
                     self.get_logger().info(f'Servo {sid} configured for position mode')
+                else:
+                    self.get_logger().warn(f'Servo {sid} not in position or velocity list, skipping configuration')
             
             self.get_logger().info(f'Configured servos: {self.servo_ids}')
             
@@ -98,9 +104,9 @@ class ST3215ServiceNode(Node):
         try:
             positions = []
             for servo_id in request.servo_ids:
-                # Servo 1 is in velocity mode, position reading may not work reliably
+                # Velocity mode servos don't have meaningful position readings
                 # Return 0 as a placeholder since position is not meaningful in velocity mode
-                if servo_id == 1:
+                if servo_id in self.velocity_servo_ids:
                     positions.append(0)
                 else:
                     pos = self.servo.ReadPosition(servo_id)
@@ -177,8 +183,8 @@ class ST3215ServiceNode(Node):
         try:
             velocities = []
             for servo_id in request.servo_ids:
-                # Only servo 1 is in velocity mode, read its speed
-                if servo_id == 1:
+                # Only velocity mode servos have meaningful velocity readings
+                if servo_id in self.velocity_servo_ids:
                     speed_result = self.servo.ReadSpeed(servo_id)
                     if speed_result and len(speed_result) >= 1:
                         speed = speed_result[0]  # ReadSpeed returns (speed, comm_result, error)
