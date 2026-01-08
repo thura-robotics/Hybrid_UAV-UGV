@@ -55,9 +55,9 @@ class ST3215ServiceNode(Node):
                     self.get_logger().info(f'Servo {sid} configured for velocity mode')
                 elif sid in self.position_servo_ids:
                     self.servo.SetMode(sid, 0)  # Position mode
-                    self.servo.SetSpeed(sid, 2400)
+                    self.servo.SetSpeed(sid, 400)  # Set constant speed to 400
                     self.servo.SetAcceleration(sid, 50)
-                    self.get_logger().info(f'Servo {sid} configured for position mode')
+                    self.get_logger().info(f'Servo {sid} configured for position mode (speed: 400)')
                 else:
                     self.get_logger().warn(f'Servo {sid} not in position or velocity list, skipping configuration')
             

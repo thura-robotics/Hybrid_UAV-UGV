@@ -82,6 +82,7 @@ install(PROGRAMS
   nodes/st3215_service_node.py
   scripts/test_servo_detection.py
   scripts/test_position_commands.py
+  scripts/servo_sequence.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

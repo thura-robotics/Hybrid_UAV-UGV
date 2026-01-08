@@ -204,14 +204,6 @@ ros2 run hybrid_robot_hardware test_position_commands.py
 - [Technical Walkthrough](doc/TECHNICAL_WALKTHROUGH.md) - Detailed implementation guide
 - [Implementation Plan](doc/implementation_plan.md) - Development roadmap
 
-## License
-
-[Add your license here]
-
-## Authors
-
-- Thura Robotics Team
-
 ## Acknowledgments
 
 - ST3215 servo driver library
@@ -222,3 +214,32 @@ colcon build --packages-select hybrid_robot_hardware --symlink-install
 
 source install/setup.bash
 ros2 launch hybrid_robot_hardware robot_control.launch.py
+
+
+## Quick reference for common angles:
+
+0.0 rad = 0°
+π/2 rad ≈ 1.5708 rad = 90°
+π rad ≈ 3.1416 rad = 180°
+2π rad ≈ 6.2832 rad = 360°
+
+## Normal 
+ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArray "data: [3.1416, 3.1416]"
+## Move servo2 to 90° 
+ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArray "data: [3.1416, 1.5708]"
+## Move servo1 to 90° 
+ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArray "data: [1.5708, 1.5708]"
+## Move servo 2 to 180°
+ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArray "data: [1.5708, 3.1416]"
+
+## launch the robot control system first 
+cd ~/Hybrid_UAV-UGV/software/morphobot_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch hybrid_robot_hardware robot_control.launch.py
+
+## run the servo sequence
+cd ~/Hybrid_UAV-UGV/software/morphobot_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run hybrid_robot_hardware servo_sequence.py
