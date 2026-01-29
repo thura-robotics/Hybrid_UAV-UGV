@@ -80,7 +80,6 @@ install(
 # Install Python executables
 install(PROGRAMS
   nodes/st3215_service_node.py
-  nodes/motor_driver_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

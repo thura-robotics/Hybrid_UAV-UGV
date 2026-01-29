@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'morphing_control'
+package_name = 'control'
 
 setup(
     name=package_name,
@@ -15,7 +15,7 @@ setup(
     zip_safe=True,
     maintainer='eisan',
     maintainer_email='hnineisan547@gmail.com',
-    description='TODO: Package description',
+    description='Hybrid robot control system - mode management, UGV control, and morphing control',
     license='Apache-2.0',
     extras_require={
         'test': [
@@ -24,6 +24,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'mode_manager_node = control.mode_manager_node:main',
+            'ugv_control_node = control.ugv_control_node:main',
+            'morphing_control_node = control.morphing_control_node:main',
         ],
     },
 )
