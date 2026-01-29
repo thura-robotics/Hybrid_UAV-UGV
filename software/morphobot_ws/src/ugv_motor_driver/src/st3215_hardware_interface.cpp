@@ -1,4 +1,4 @@
-#include "hybrid_robot_hardware/st3215_hardware_interface.hpp"
+#include "ugv_motor_driver/st3215_hardware_interface.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -11,7 +11,7 @@
 
 using namespace std::chrono_literals;
 
-namespace hybrid_robot_hardware
+namespace ugv_motor_driver
 {
 
 hardware_interface::CallbackReturn ST3215HardwareInterface::on_init(
@@ -423,8 +423,8 @@ int ST3215HardwareInterface::radians_to_ticks(double radians)
   return ticks;
 }
 
-}  // namespace hybrid_robot_hardware
+}  // namespace ugv_motor_driver
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(
-  hybrid_robot_hardware::ST3215HardwareInterface, hardware_interface::SystemInterface)
+  ugv_motor_driver::ST3215HardwareInterface, hardware_interface::SystemInterface)

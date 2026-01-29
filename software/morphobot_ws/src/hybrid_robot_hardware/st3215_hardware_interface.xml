@@ -1,7 +1,0 @@
-<library path="hybrid_robot_hardware_plugin">
-  <class name="hybrid_robot_hardware/ST3215HardwareInterface" type="hybrid_robot_hardware::ST3215HardwareInterface" base_class_type="hardware_interface::SystemInterface">
-    <description>
-      ROS 2 Control hardware interface for ST3215 servos using Python library via pybind11
-    </description>
-  </class>
-</library>

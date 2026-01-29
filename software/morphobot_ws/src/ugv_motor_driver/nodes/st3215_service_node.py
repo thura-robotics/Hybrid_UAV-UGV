@@ -6,7 +6,7 @@ Provides services for the C++ hardware interface to call.
 
 import rclpy
 from rclpy.node import Node
-from hybrid_robot_hardware.srv import ReadPositions, WritePositions, WriteVelocities, ReadVelocities
+from ugv_motor_driver.srv import ReadPositions, WritePositions, WriteVelocities, ReadVelocities
 
 try:
     from st3215 import ST3215

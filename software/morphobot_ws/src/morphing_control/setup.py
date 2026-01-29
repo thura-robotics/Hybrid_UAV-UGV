@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'hybrid_robot_control'
+package_name = 'morphing_control'
 
 setup(
     name=package_name,
@@ -16,7 +16,7 @@ setup(
     maintainer='eisan',
     maintainer_email='hnineisan547@gmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

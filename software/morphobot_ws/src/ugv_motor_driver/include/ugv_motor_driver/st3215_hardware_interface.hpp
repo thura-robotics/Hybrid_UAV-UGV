@@ -14,12 +14,12 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "hybrid_robot_hardware/srv/read_positions.hpp"
-#include "hybrid_robot_hardware/srv/write_positions.hpp"
-#include "hybrid_robot_hardware/srv/write_velocities.hpp"
-#include "hybrid_robot_hardware/srv/read_velocities.hpp"
+#include "ugv_motor_driver/srv/read_positions.hpp"
+#include "ugv_motor_driver/srv/write_positions.hpp"
+#include "ugv_motor_driver/srv/write_velocities.hpp"
+#include "ugv_motor_driver/srv/read_velocities.hpp"
 
-namespace hybrid_robot_hardware
+namespace ugv_motor_driver
 {
 
 class ST3215HardwareInterface : public hardware_interface::SystemInterface
@@ -77,6 +77,6 @@ private:
   int radians_to_ticks(double radians);
 };
 
-}  // namespace hybrid_robot_hardware
+}  // namespace ugv_motor_driver
 
 #endif  // HYBRID_ROBOT_HARDWARE__ST3215_HARDWARE_INTERFACE_HPP_

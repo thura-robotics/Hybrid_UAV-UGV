@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'px4_interface'
+package_name = 'ugv_control'
 
 setup(
     name=package_name,
@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='eisan',
     maintainer_email='hnineisan547@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='UGV control node - handles ground movement commands',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

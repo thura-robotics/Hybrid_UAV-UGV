@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>hybrid_robot_hardware</name>
+  <name>ugv_motor_driver</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>UGV motor driver for ST3215 servos - handles ground wheels and morphing actuators</description>
   <maintainer email="hnineisan547@gmail.com">eisan</maintainer>
   <license>TODO: License declaration</license>
 

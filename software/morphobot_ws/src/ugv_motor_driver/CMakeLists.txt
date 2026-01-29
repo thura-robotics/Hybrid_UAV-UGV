@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(hybrid_robot_hardware)
+project(ugv_motor_driver)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -80,9 +80,7 @@ install(
 # Install Python executables
 install(PROGRAMS
   nodes/st3215_service_node.py
-  scripts/test_servo_detection.py
-  scripts/test_position_commands.py
-  scripts/servo_sequence.py
+  nodes/motor_driver_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

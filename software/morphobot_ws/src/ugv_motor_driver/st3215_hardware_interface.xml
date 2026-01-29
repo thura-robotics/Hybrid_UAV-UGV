@@ -1,0 +1,7 @@
+<library path="hybrid_robot_hardware_plugin">
+  <class name="ugv_motor_driver/ST3215HardwareInterface" type="ugv_motor_driver::ST3215HardwareInterface" base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ST3215 servo hardware interface for ROS 2 Control
+    </description>
+  </class>
+</library>
