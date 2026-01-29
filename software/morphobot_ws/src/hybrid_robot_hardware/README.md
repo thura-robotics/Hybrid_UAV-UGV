@@ -243,3 +243,19 @@ cd ~/Hybrid_UAV-UGV/software/morphobot_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run hybrid_robot_hardware servo_sequence.py
+
+
+cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
+source install/setup.bash
+
+# Read all servo positions
+ros2 service call /st3215/read_positions hybrid_robot_hardware/srv/ReadPositions "{servo_ids: [1, 2, 3, 9, 10]}"
+
+# Read single servo position (e.g., servo 1)
+ros2 service call /st3215/read_positions hybrid_robot_hardware/srv/ReadPositions "{servo_ids: [1]}"
+
+# Read specific servos (e.g., servos 1 and 2)
+ros2 service call /st3215/read_positions hybrid_robot_hardware/srv/ReadPositions "{servo_ids: [1, 2]}"
+
+# Move multiple servos at once (servos 1 and 2)
+ros2 service call /st3215/write_positions hybrid_robot_hardware/srv/WritePositions "{servo_ids: [1, 9], positions: [2100, 2100]}"

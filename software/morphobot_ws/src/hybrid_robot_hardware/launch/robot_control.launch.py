@@ -53,18 +53,22 @@ def generate_launch_description():
         ]
     )
 
+    # Get ST3215 service node parameters
+    st3215_params = PathJoinSubstitution(
+        [
+            FindPackageShare("hybrid_robot_hardware"),
+            "config",
+            "st3215_params.yaml",
+        ]
+    )
+
     # ST3215 Service Node (Python) - MUST START FIRST!
     st3215_service_node = Node(
         package="hybrid_robot_hardware",
         executable="st3215_service_node.py",
         name="st3215_service_node",
         output="both",
-        parameters=[
-            {"serial_port": serial_port},
-            {"servo_ids": [1, 2, 3]},
-            {"position_servo_ids": [1, 2]},
-            {"velocity_servo_ids": [3]},
-        ],
+        parameters=[st3215_params],
     )
 
     # Controller manager node (starts after service node)

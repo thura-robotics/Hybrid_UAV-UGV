@@ -22,16 +22,16 @@ class ST3215ServiceNode(Node):
     def __init__(self):
         super().__init__('st3215_service_node')
         
-        # Parameters
-        self.declare_parameter('serial_port', '/dev/ttyUSB0')
-        self.declare_parameter('servo_ids', [1, 2, 3])
-        self.declare_parameter('position_servo_ids', [1, 2])  # Servos in position mode
-        self.declare_parameter('velocity_servo_ids', [3])      # Servos in velocity mode
+        # Parameters - no defaults, must be provided via YAML file
+        self.declare_parameter('serial_port')
+        self.declare_parameter('servo_ids')
+        self.declare_parameter('position_servo_ids')
+        self.declare_parameter('velocity_servo_ids')
         
         port = self.get_parameter('serial_port').get_parameter_value().string_value
-        self.servo_ids = self.get_parameter('servo_ids').get_parameter_value().integer_array_value
-        self.position_servo_ids = self.get_parameter('position_servo_ids').get_parameter_value().integer_array_value
-        self.velocity_servo_ids = self.get_parameter('velocity_servo_ids').get_parameter_value().integer_array_value
+        self.servo_ids = list(self.get_parameter('servo_ids').get_parameter_value().integer_array_value)
+        self.position_servo_ids = list(self.get_parameter('position_servo_ids').get_parameter_value().integer_array_value)
+        self.velocity_servo_ids = list(self.get_parameter('velocity_servo_ids').get_parameter_value().integer_array_value)
         
         # Initialize ST3215 driver
         try:
