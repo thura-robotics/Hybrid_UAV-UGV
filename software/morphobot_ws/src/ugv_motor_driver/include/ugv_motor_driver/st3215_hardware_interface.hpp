@@ -62,6 +62,7 @@ private:
   // Parameters
   std::string serial_port_;
   std::vector<int> servo_ids_;
+  std::map<int, size_t> servo_to_joint_map_;  // Maps servo ID to joint index
   
   // State storage
   std::vector<double> hw_positions_;

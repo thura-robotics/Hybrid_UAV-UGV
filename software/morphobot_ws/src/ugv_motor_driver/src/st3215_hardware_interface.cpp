@@ -44,6 +44,15 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_init(
     rclcpp::get_logger("ST3215HardwareInterface"),
     "Number of servos: %zu", servo_ids_.size());
 
+  // Build mapping from servo ID to joint index
+  // This allows non-sequential servo IDs (e.g., 1,2,3,9,10)
+  for (size_t i = 0; i < servo_ids_.size(); i++) {
+    servo_to_joint_map_[servo_ids_[i]] = i;
+    RCLCPP_INFO(
+      rclcpp::get_logger("ST3215HardwareInterface"),
+      "Mapped servo ID %d to joint index %zu", servo_ids_[i], i);
+  }
+
   // Resize state and command vectors
   hw_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   hw_velocities_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
@@ -198,15 +207,19 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_activate(
     {
       for (size_t i = 0; i < servo_ids_.size(); i++)
       {
-        hw_positions_[i] = ticks_to_radians(response->positions[i]);
-        hw_position_commands_[i] = hw_positions_[i];
-        hw_velocities_[i] = 0.0;
-        hw_velocity_commands_[i] = 0.0;
-        hw_efforts_[i] = 0.0;
+        int servo_id = servo_ids_[i];
+        size_t joint_idx = servo_to_joint_map_[servo_id];
+        
+        hw_positions_[joint_idx] = ticks_to_radians(response->positions[i]);
+        hw_position_commands_[joint_idx] = hw_positions_[joint_idx];
+        hw_velocities_[joint_idx] = 0.0;
+        hw_velocity_commands_[joint_idx] = 0.0;
+        hw_efforts_[joint_idx] = 0.0;
         
         RCLCPP_INFO(
           rclcpp::get_logger("ST3215HardwareInterface"),
-          "Servo %d initial position: %.3f rad", servo_ids_[i], hw_positions_[i]);
+          "Servo %d (joint index %zu) initial position: %.3f rad", 
+          servo_id, joint_idx, hw_positions_[joint_idx]);
       }
       
       if (!response->success)
@@ -258,7 +271,9 @@ hardware_interface::return_type ST3215HardwareInterface::read(
     {
       for (size_t i = 0; i < servo_ids_.size(); i++)
       {
-        hw_positions_[i] = ticks_to_radians(response->positions[i]);
+        int servo_id = servo_ids_[i];
+        size_t joint_idx = servo_to_joint_map_[servo_id];
+        hw_positions_[joint_idx] = ticks_to_radians(response->positions[i]);
       }
     }
     else
@@ -291,8 +306,10 @@ hardware_interface::return_type ST3215HardwareInterface::read(
     {
       for (size_t i = 0; i < servo_ids_.size(); i++)
       {
+        int servo_id = servo_ids_[i];
+        size_t joint_idx = servo_to_joint_map_[servo_id];
         // Convert ticks/s to rad/s (4096 ticks = 2π radians)
-        hw_velocities_[i] = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
+        hw_velocities_[joint_idx] = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
       }
     }
   }

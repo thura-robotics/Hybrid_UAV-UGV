@@ -162,7 +162,15 @@ class ST3215ServiceNode(Node):
                 return response
             
             for servo_id, velocity in zip(request.servo_ids, request.velocities):
-                success = self.servo.Rotate(servo_id, velocity)
+                # Clamp velocity to valid byte range (0-255)
+                clamped_velocity = max(0, min(255, int(abs(velocity))))
+                
+                if clamped_velocity != velocity:
+                    self.get_logger().warn(
+                        f'Clamped velocity for servo {servo_id}: {velocity} -> {clamped_velocity}'
+                    )
+                
+                success = self.servo.Rotate(servo_id, clamped_velocity)
                 if not success:
                     response.success = False
                     response.message = f'Failed to write velocity to servo {servo_id}'

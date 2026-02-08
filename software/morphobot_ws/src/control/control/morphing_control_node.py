@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
 """
-Morphing Control Node - Manages morphing sequences for hybrid robot.
+Morphing Control Node - Manages morphing sequences using ROS2 Control.
 
 Subscribes to:
 - /robot_mode: Current robot mode
 
-Calls services:
-- /st3215/write_positions: Control morphing servos
-
-Publishes:
+Publishes to:
+- /position_controller/commands: Commands to ROS2 Control position controller
 - /morphing_state: Current morphing state and progress
 """
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
-from ugv_motor_driver.srv import WritePositions
-import time
+from std_msgs.msg import String, Float64MultiArray
+import math
 
 
 class MorphingControlNode(Node):
-    """Morphing control - executes morphing sequences based on mode."""
+    """Morphing control - publishes to position controller."""
     
     # Morphing states
     STATE_IDLE = "IDLE"
@@ -30,11 +27,7 @@ class MorphingControlNode(Node):
     def __init__(self):
         super().__init__('morphing_control_node')
         
-        # Parameters
-        self.declare_parameter('morphing_servos', [1, 2, 9, 10])
-        self.morphing_servos = list(self.get_parameter('morphing_servos').get_parameter_value().integer_array_value)
-        
-        # Morphing sequences (positions for each configuration)
+        # Morphing sequences (positions in ST3215 ticks: 0-4095, center=2048)
         # TODO: Load from config file
         self.sequences = {
             "MORPH_START": [2048, 2048, 2048, 2048],      # Start position
@@ -57,15 +50,15 @@ class MorphingControlNode(Node):
         # Publishers
         self.state_pub = self.create_publisher(String, '/morphing_state', 10)
         
-        # Service client
-        self.write_pos_client = self.create_client(WritePositions, '/st3215/write_positions')
+        # Publisher to position controller (ROS2 Control)
+        self.pos_cmd_pub = self.create_publisher(
+            Float64MultiArray,
+            '/position_controller/commands',
+            10
+        )
         
-        # Wait for service
-        while not self.write_pos_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for /st3215/write_positions service...')
-        
-        self.get_logger().info('Morphing Control initialized')
-        self.get_logger().info(f'Morphing servos: {self.morphing_servos}')
+        self.get_logger().info('Morphing Control initialized (ROS2 Control mode)')
+        self.get_logger().info(f'Available sequences: {list(self.sequences.keys())}')
     
     def mode_callback(self, msg):
         """Handle mode changes and trigger morphing sequences."""
@@ -95,31 +88,42 @@ class MorphingControlNode(Node):
         self.morphing_state = self.STATE_MORPHING
         self.publish_state()
         
-        positions = self.sequences[mode]
+        positions_ticks = self.sequences[mode]
         
-        # Send position command
-        request = WritePositions.Request()
-        request.servo_ids = self.morphing_servos
-        request.positions = positions
+        # Convert ST3215 ticks to radians for ROS2 Control
+        msg = Float64MultiArray()
+        msg.data = [self.ticks_to_radians(p) for p in positions_ticks]
         
-        future = self.write_pos_client.call_async(request)
-        future.add_done_callback(self.position_response_callback)
-    
-    def position_response_callback(self, future):
-        """Handle service response."""
-        try:
-            response = future.result()
-            if response.success:
-                self.get_logger().info('Morphing sequence complete')
-                self.morphing_state = self.STATE_COMPLETE
-            else:
-                self.get_logger().error(f'Morphing failed: {response.message}')
-                self.morphing_state = self.STATE_IDLE
-        except Exception as e:
-            self.get_logger().error(f'Service call failed: {e}')
-            self.morphing_state = self.STATE_IDLE
+        # Publish to position controller
+        self.pos_cmd_pub.publish(msg)
         
+        self.get_logger().info(f'Morphing command sent: {positions_ticks} ticks')
+        self.get_logger().info(f'Converted to radians: {msg.data}')
+        
+        # Mark as complete (in reality, you'd wait for feedback)
+        # TODO: Add feedback from joint_states to verify completion
+        self.morphing_state = self.STATE_COMPLETE
         self.publish_state()
+    
+    def ticks_to_radians(self, ticks):
+        """
+        Convert ST3215 position ticks (0-4095) to radians.
+        
+        ST3215 range: 0-4095 ticks
+        Center: 2048 ticks = 0 radians
+        Full range: 4096 ticks ≈ 2π radians (360°)
+        """
+        # Normalize around center (2048)
+        normalized = ticks - 2048
+        # Convert to radians
+        radians = normalized * (2 * math.pi / 4096)
+        return radians
+    
+    def radians_to_ticks(self, radians):
+        """Convert radians back to ST3215 ticks."""
+        normalized = radians * (4096 / (2 * math.pi))
+        ticks = int(normalized + 2048)
+        return max(0, min(4095, ticks))  # Clamp to valid range
     
     def publish_state(self):
         """Publish current morphing state."""

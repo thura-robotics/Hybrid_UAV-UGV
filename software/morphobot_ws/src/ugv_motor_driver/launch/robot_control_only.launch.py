@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
-Launch file for ST3215 hardware interface with ROS 2 Control.
-Starts Python service node, hardware interface, controller manager, and controllers.
+Launch file for ROS 2 Control ONLY (without service node).
+The st3215_service_node.py must be started separately first!
+
+Usage:
+  Terminal 1: ros2 run ugv_motor_driver st3215_service_node.py --ros-args --params-file ...
+  Terminal 2: ros2 launch ugv_motor_driver robot_control_only.launch.py
 """
 
 import os
@@ -20,7 +24,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "serial_port",
-            default_value="/dev/ttyUSB1",
+            default_value="/dev/ttyUSB0",
             description="Serial port for ST3215 servos",
         )
     )
@@ -53,25 +57,7 @@ def generate_launch_description():
         ]
     )
 
-    # Get ST3215 service node parameters
-    st3215_params = PathJoinSubstitution(
-        [
-            FindPackageShare("ugv_motor_driver"),
-            "config",
-            "st3215_params.yaml",
-        ]
-    )
-
-    # ST3215 Service Node (Python) - MUST START FIRST!
-    st3215_service_node = Node(
-        package="ugv_motor_driver",
-        executable="st3215_service_node.py",
-        name="st3215_service_node",
-        output="both",
-        parameters=[st3215_params],
-    )
-
-    # Controller manager node (starts after service node)
+    # Controller manager node
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -111,12 +97,6 @@ def generate_launch_description():
         arguments=["velocity_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Delay control node start until service node is ready (give it 3 seconds)
-    delay_control_node_after_service = TimerAction(
-        period=3.0,
-        actions=[control_node],
-    )
-
     # Delay position controller spawner after joint state broadcaster
     delay_position_controller_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -134,8 +114,7 @@ def generate_launch_description():
     )
 
     nodes = [
-        st3215_service_node,
-        delay_control_node_after_service,
+        control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
         delay_position_controller_spawner,

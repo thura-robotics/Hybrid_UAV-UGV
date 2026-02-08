@@ -1,7 +1,7 @@
 st3215_service_node:
   ros__parameters:
-    serial_port: "/dev/ttyUSB0"
-    servo_ids: [1,2,3,9,10]
-    position_servo_ids: [1,2,9,10]
-    velocity_servo_ids: [3]
+    serial_port: "/dev/ttyUSB1"
+    servo_ids: [4,10]
+    position_servo_ids: [4]
+    velocity_servo_ids: [10]
 

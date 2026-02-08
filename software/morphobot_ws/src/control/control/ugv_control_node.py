@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 """
-UGV Control Node - Ground movement control for hybrid robot.
+UGV Control Node - Ground movement control using ROS2 Control.
 
 Subscribes to:
 - /robot_mode: Current robot mode
 - /cmd_vel: Velocity commands (Twist)
 
-Calls services:
-- /st3215/write_velocities: Control wheel servos
+Publishes to:
+- /velocity_controller/commands: Commands to ROS2 Control velocity controller
 """
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Float64MultiArray
 from geometry_msgs.msg import Twist
-from ugv_motor_driver.srv import WriteVelocities
 
 
 class UGVControlNode(Node):
-    """UGV control - converts velocity commands to wheel servo commands."""
+    """UGV control - publishes to velocity controller."""
     
     def __init__(self):
         super().__init__('ugv_control_node')
         
         # Parameters
-        self.declare_parameter('wheel_servos', [3])  # Servo IDs for wheels
-        self.wheel_servos = list(self.get_parameter('wheel_servos').get_parameter_value().integer_array_value)
+        self.declare_parameter('max_velocity', 1000.0)  # Max servo velocity
+        self.declare_parameter('velocity_scale', 1000.0)  # Scale factor for cmd_vel
+        
+        self.max_velocity = self.get_parameter('max_velocity').get_parameter_value().double_value
+        self.velocity_scale = self.get_parameter('velocity_scale').get_parameter_value().double_value
         
         # State
         self.active = False  # Only active in CRAWL mode
@@ -47,15 +49,16 @@ class UGVControlNode(Node):
             10
         )
         
-        # Service client
-        self.write_vel_client = self.create_client(WriteVelocities, '/st3215/write_velocities')
+        # Publisher to velocity controller (ROS2 Control)
+        self.vel_cmd_pub = self.create_publisher(
+            Float64MultiArray,
+            '/velocity_controller/commands',
+            10
+        )
         
-        # Wait for service
-        while not self.write_vel_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for /st3215/write_velocities service...')
-        
-        self.get_logger().info('UGV Control initialized')
-        self.get_logger().info(f'Wheel servos: {self.wheel_servos}')
+        self.get_logger().info('UGV Control initialized (ROS2 Control mode)')
+        self.get_logger().info(f'Max velocity: {self.max_velocity}')
+        self.get_logger().info(f'Velocity scale: {self.velocity_scale}')
     
     def mode_callback(self, msg):
         """Handle mode changes."""
@@ -86,35 +89,23 @@ class UGVControlNode(Node):
         
         # Simple implementation: just use linear velocity for now
         # TODO: Implement proper differential drive kinematics
-        velocity = int(self.current_linear_vel * 1000)  # Scale to servo units
+        velocity = self.current_linear_vel * self.velocity_scale
         
         # Clamp velocity
-        velocity = max(-1000, min(1000, velocity))
+        velocity = max(-self.max_velocity, min(self.max_velocity, velocity))
         
         self.send_wheel_command(velocity)
     
     def send_wheel_command(self, velocity):
-        """Send velocity command to wheel servos."""
-        request = WriteVelocities.Request()
-        request.servo_ids = self.wheel_servos
-        request.velocities = [velocity] * len(self.wheel_servos)
-        
-        future = self.write_vel_client.call_async(request)
-        future.add_done_callback(self.velocity_response_callback)
+        """Send velocity command to ROS2 Control velocity controller."""
+        msg = Float64MultiArray()
+        msg.data = [float(velocity)]  # One value per joint in velocity controller
+        self.vel_cmd_pub.publish(msg)
     
     def stop_wheels(self):
         """Stop all wheel servos."""
-        self.send_wheel_command(0)
+        self.send_wheel_command(0.0)
         self.get_logger().info('Wheels stopped')
-    
-    def velocity_response_callback(self, future):
-        """Handle service response."""
-        try:
-            response = future.result()
-            if not response.success:
-                self.get_logger().error(f'Velocity write failed: {response.message}')
-        except Exception as e:
-            self.get_logger().error(f'Service call failed: {e}')
 
 
 def main(args=None):
