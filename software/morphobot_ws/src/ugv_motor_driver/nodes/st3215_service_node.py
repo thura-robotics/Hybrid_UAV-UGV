@@ -162,8 +162,9 @@ class ST3215ServiceNode(Node):
                 return response
             
             for servo_id, velocity in zip(request.servo_ids, request.velocities):
-                # Clamp velocity to valid byte range (0-255)
-                clamped_velocity = max(0, min(255, int(abs(velocity))))
+                # Clamp velocity to valid range (-3400 to 3400)
+                # Negative = CCW, Positive = CW
+                clamped_velocity = max(-3400, min(3400, int(velocity)))
                 
                 if clamped_velocity != velocity:
                     self.get_logger().warn(

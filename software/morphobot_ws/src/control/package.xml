@@ -7,10 +7,16 @@
   <maintainer email="hnineisan547@gmail.com">eisan</maintainer>
   <license>Apache-2.0</license>
 
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+  
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>ugv_motor_driver</depend>
+  <depend>mavros_msgs</depend>
+  
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
@@ -18,6 +24,7 @@
   <test_depend>python3-pytest</test_depend>
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
+

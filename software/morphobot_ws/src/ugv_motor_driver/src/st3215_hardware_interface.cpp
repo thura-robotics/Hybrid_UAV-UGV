@@ -354,8 +354,16 @@ hardware_interface::return_type ST3215HardwareInterface::write(
     
     for (size_t idx : velocity_servo_indices)
     {
+      int velocity_value = static_cast<int>(hw_velocity_commands_[idx]);
       vel_request->servo_ids.push_back(servo_ids_[idx]);
-      vel_request->velocities.push_back(static_cast<int>(hw_velocity_commands_[idx]));
+      vel_request->velocities.push_back(velocity_value);
+      
+      // Debug logging
+      RCLCPP_INFO_THROTTLE(
+        rclcpp::get_logger("ST3215HardwareInterface"),
+        *node_->get_clock(), 500,
+        "Sending velocity to servo %d: %.2f -> %d", 
+        servo_ids_[idx], hw_velocity_commands_[idx], velocity_value);
     }
     
     auto vel_future = write_velocities_client_->async_send_request(vel_request);

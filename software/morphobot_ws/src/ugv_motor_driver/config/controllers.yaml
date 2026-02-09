@@ -20,5 +20,6 @@ position_controller:
 velocity_controller:
   ros__parameters:
     joints:
+      - servo_joint_4
       - servo_joint_10
     interface_name: velocity
