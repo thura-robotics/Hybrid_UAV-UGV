@@ -53,6 +53,15 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_init(
       "Mapped servo ID %d to joint index %zu", servo_ids_[i], i);
   }
 
+  // Validate that servo count matches joint count
+  if (servo_ids_.size() != info_.joints.size()) {
+    RCLCPP_FATAL(
+      rclcpp::get_logger("ST3215HardwareInterface"),
+      "Servo count mismatch! servo_ids has %zu servos but URDF has %zu joints",
+      servo_ids_.size(), info_.joints.size());
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+
   // Resize state and command vectors
   hw_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
   hw_velocities_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());

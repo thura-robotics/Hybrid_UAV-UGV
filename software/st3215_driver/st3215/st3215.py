@@ -48,7 +48,7 @@ class ST3215(protocol_packet_handler):
         :return: A list of servo ID
         """
         servos=[]
-        for id in range(0, 12):
+        for id in range(0, 13):
             if self.PingServo(id):
                 servos.append(id)
 

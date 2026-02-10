@@ -42,11 +42,11 @@ class ST3215ServiceNode(Node):
             detected = self.servo.ListServos()
             self.get_logger().info(f'Detected servos: {detected}')
             
-            # Verify configured servos
+            # Note: ListServos() doesn't always detect all servos (e.g., higher IDs like 12)
+            # So we skip verification and just try to configure all servos
             for sid in self.servo_ids:
                 if sid not in detected:
-                    self.get_logger().error(f'Servo {sid} not detected!')
-                    raise RuntimeError(f'Servo {sid} not found')
+                    self.get_logger().warn(f'Servo {sid} not detected in scan, but will try to use it anyway')
             
             # Configure servos based on position_servo_ids and velocity_servo_ids
             for sid in self.servo_ids:

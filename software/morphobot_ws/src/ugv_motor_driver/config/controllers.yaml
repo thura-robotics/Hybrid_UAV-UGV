@@ -14,12 +14,15 @@ controller_manager:
 position_controller:
   ros__parameters:
     joints:
-      - servo_joint_4
+      - servo_joint_1
+      - servo_joint_2
+      - servo_joint_5
+      - servo_joint_6
     interface_name: position
 
 velocity_controller:
   ros__parameters:
     joints:
-      - servo_joint_4
-      - servo_joint_10
+      - servo_joint_3
+      - servo_joint_12
     interface_name: velocity

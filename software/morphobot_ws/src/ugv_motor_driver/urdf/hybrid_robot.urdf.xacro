@@ -5,6 +5,9 @@
   <xacro:property name="servo_1_id" value="1" />
   <xacro:property name="servo_2_id" value="2" />
   <xacro:property name="servo_3_id" value="3" />
+  <xacro:property name="servo_5_id" value="5" />
+  <xacro:property name="servo_6_id" value="6" />
+  <xacro:property name="servo_12_id" value="12" />
 
   <!-- Base link -->
   <link name="base_link">
@@ -78,7 +81,139 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
+  <!-- Servo 5 link and joint -->
+  <link name="servo_link_5">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_5" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_5"/>
+    <origin xyz="0 0.05 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 6 link and joint -->
+  <link name="servo_link_6">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_6" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_6"/>
+    <origin xyz="0.05 0.05 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- ROS 2 Control hardware interface -->
+  <ros2_control name="ST3215HardwareSystem" type="system">
+    <hardware>
+      <plugin>ugv_motor_driver/ST3215HardwareInterface</plugin>
+      <param name="serial_port">/dev/ttyUSB0</param>
+      <param name="servo_ids">1,2,3,5,6,12</param>
+    </hardware>
+
+
+    <joint name="servo_joint_1">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_2">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_3">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_5">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_6">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_12">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Servo 12 link and joint -->
+  <link name="servo_link_12">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_12" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_12"/>
+    <origin xyz="-0.05 0.05 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- OLD SERVOS - COMMENTED OUT -->
   <!-- Servo 4 link and joint -->
+  <!--
   <link name="servo_link_4">
     <visual>
       <geometry>
@@ -97,42 +232,10 @@
     <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
-
-  <!-- ROS 2 Control hardware interface -->
-  <ros2_control name="ST3215HardwareSystem" type="system">
-    <hardware>
-      <plugin>ugv_motor_driver/ST3215HardwareInterface</plugin>
-      <param name="serial_port">/dev/ttyUSB1</param>
-      <param name="servo_ids">4,10</param>
-    </hardware>
-
-
-    <joint name="servo_joint_4">
-      <command_interface name="position">
-        <param name="min">-3.14</param>
-        <param name="max">3.14</param>
-      </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-255</param>
-        <param name="max">255</param>
-      </command_interface>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-
-    <joint name="servo_joint_10">
-      <command_interface name="velocity">
-        <param name="min">-255</param>
-        <param name="max">255</param>
-      </command_interface>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-  </ros2_control>
+  -->
 
   <!-- Servo 9 link and joint -->
+  <!--
   <link name="servo_link_9">
     <visual>
       <geometry>
@@ -151,8 +254,10 @@
     <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
+  -->
 
   <!-- Servo 10 link and joint -->
+  <!--
   <link name="servo_link_10">
     <visual>
       <geometry>
@@ -171,5 +276,6 @@
     <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
+  -->
 
 </robot>
