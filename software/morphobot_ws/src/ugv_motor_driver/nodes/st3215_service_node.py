@@ -22,11 +22,11 @@ class ST3215ServiceNode(Node):
     def __init__(self):
         super().__init__('st3215_service_node')
         
-        # Parameters - no defaults, must be provided via YAML file
-        self.declare_parameter('serial_port')
-        self.declare_parameter('servo_ids')
-        self.declare_parameter('position_servo_ids')
-        self.declare_parameter('velocity_servo_ids')
+        # Parameters - provide defaults or types to avoid deprecation warnings
+        self.declare_parameter('serial_port', rclpy.Parameter.Type.STRING)
+        self.declare_parameter('servo_ids', rclpy.Parameter.Type.INTEGER_ARRAY)
+        self.declare_parameter('position_servo_ids', rclpy.Parameter.Type.INTEGER_ARRAY)
+        self.declare_parameter('velocity_servo_ids', rclpy.Parameter.Type.INTEGER_ARRAY)
         
         port = self.get_parameter('serial_port').get_parameter_value().string_value
         self.servo_ids = list(self.get_parameter('servo_ids').get_parameter_value().integer_array_value)

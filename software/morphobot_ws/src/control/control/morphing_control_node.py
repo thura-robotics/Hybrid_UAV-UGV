@@ -1,135 +1,96 @@
 #!/usr/bin/env python3
 """
-Morphing Control Node - Manages morphing sequences using ROS2 Control.
+Morphing Control Node - Manages servo position sequences for robot transformation.
 
 Subscribes to:
-- /robot_mode: Current robot mode
+- /robot/mode: Current robot mode (0=UAV, 1=MORPH, 2=UGV)
 
 Publishes to:
-- /position_controller/commands: Commands to ROS2 Control position controller
-- /morphing_state: Current morphing state and progress
+- /position_controller/commands: Commands to ROS2 Control position controller (servos 1, 2, 5, 6)
 """
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float64MultiArray
+from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float32MultiArray
 import math
 
-
 class MorphingControlNode(Node):
-    """Morphing control - publishes to position controller."""
-    
-    # Morphing states
-    STATE_IDLE = "IDLE"
-    STATE_MORPHING = "MORPHING"
-    STATE_COMPLETE = "COMPLETE"
+    """Morphing control - moves servos to specific positions based on mode."""
     
     def __init__(self):
         super().__init__('morphing_control_node')
         
-        # Morphing sequences (positions in ST3215 ticks: 0-4095, center=2048)
-        # TODO: Load from config file
-        self.sequences = {
-            "MORPH_START": [2048, 2048, 2048, 2048],      # Start position
-            "MORPH_UPRIGHT": [2048, 1500, 2048, 2500],    # Upright configuration
-            "MORPH_QUADROTOR": [1500, 1500, 2500, 2500],  # Quadrotor configuration
-        }
+        # Constants
+        self.IDLE_TICKS = 2095
+        self.MORPH_SERVO_1_TICKS = 3000
+        self.MORPH_SERVO_5_TICKS = 1000
         
-        # State
-        self.morphing_state = self.STATE_IDLE
-        self.current_mode = None
+        # Current state
+        self.current_mode = -1  # Unknown
         
-        # Subscribers
+        # Subscribe to mode from px4_rc_bridge (/robot/mode → [0=UAV, 1=MORPH, 2=UGV])
         self.mode_sub = self.create_subscription(
-            String,
-            '/robot_mode',
+            Float32MultiArray,
+            '/robot/mode',
             self.mode_callback,
             10
         )
         
-        # Publishers
-        self.state_pub = self.create_publisher(String, '/morphing_state', 10)
-        
-        # Publisher to position controller (ROS2 Control)
+        # Publisher to position controller (ROS2 Control) — [servo_1, servo_2, servo_5, servo_6]
         self.pos_cmd_pub = self.create_publisher(
             Float64MultiArray,
             '/position_controller/commands',
             10
         )
         
-        self.get_logger().info('Morphing Control initialized (ROS2 Control mode)')
-        self.get_logger().info(f'Available sequences: {list(self.sequences.keys())}')
-    
-    def mode_callback(self, msg):
-        """Handle mode changes and trigger morphing sequences."""
-        mode = msg.data
-        
-        # Check if this is a morphing mode
-        if mode in self.sequences:
-            if self.current_mode != mode:
-                self.get_logger().info(f'Executing morphing sequence: {mode}')
-                self.current_mode = mode
-                self.execute_morphing(mode)
-        else:
-            self.current_mode = mode
-    
-    def execute_morphing(self, mode):
-        """
-        Execute morphing sequence for given mode.
-        
-        TODO: Add smooth interpolation between positions
-        TODO: Add progress tracking
-        TODO: Add error handling
-        """
-        if mode not in self.sequences:
-            self.get_logger().warn(f'No sequence defined for mode: {mode}')
-            return
-        
-        self.morphing_state = self.STATE_MORPHING
-        self.publish_state()
-        
-        positions_ticks = self.sequences[mode]
-        
-        # Convert ST3215 ticks to radians for ROS2 Control
-        msg = Float64MultiArray()
-        msg.data = [self.ticks_to_radians(p) for p in positions_ticks]
-        
-        # Publish to position controller
-        self.pos_cmd_pub.publish(msg)
-        
-        self.get_logger().info(f'Morphing command sent: {positions_ticks} ticks')
-        self.get_logger().info(f'Converted to radians: {msg.data}')
-        
-        # Mark as complete (in reality, you'd wait for feedback)
-        # TODO: Add feedback from joint_states to verify completion
-        self.morphing_state = self.STATE_COMPLETE
-        self.publish_state()
-    
+        self.get_logger().info('Morphing Control Node started')
+        self.get_logger().info('Waiting for /robot/mode messages...')
+
     def ticks_to_radians(self, ticks):
-        """
-        Convert ST3215 position ticks (0-4095) to radians.
+        """Convert ST3215 ticks (0-4095) to radians (0-2π)."""
+        # Based on ST3215 documentation/hardware interface: 4096 ticks = 2π radians
+        return (float(ticks) / 4096.0) * 2.0 * math.pi
+
+    def mode_callback(self, msg: Float32MultiArray):
+        """Process mode changes and publish servo positions."""
+        if len(msg.data) < 1:
+            return
+            
+        new_mode = int(msg.data[0])
         
-        ST3215 range: 0-4095 ticks
-        Center: 2048 ticks = 0 radians
-        Full range: 4096 ticks ≈ 2π radians (360°)
-        """
-        # Normalize around center (2048)
-        normalized = ticks - 2048
-        # Convert to radians
-        radians = normalized * (2 * math.pi / 4096)
-        return radians
-    
-    def radians_to_ticks(self, radians):
-        """Convert radians back to ST3215 ticks."""
-        normalized = radians * (4096 / (2 * math.pi))
-        ticks = int(normalized + 2048)
-        return max(0, min(4095, ticks))  # Clamp to valid range
-    
-    def publish_state(self):
-        """Publish current morphing state."""
-        msg = String()
-        msg.data = self.morphing_state
-        self.state_pub.publish(msg)
+        # Only act if mode has changed
+        if new_mode == self.current_mode:
+            return
+            
+        self.current_mode = new_mode
+        mode_names = {0: "UAV", 1: "MORPH", 2: "UGV"}
+        mode_name = mode_names.get(new_mode, "UNKNOWN")
+        
+        self.get_logger().info(f'Detected Mode Change: {mode_name} ({new_mode})')
+        
+        # Determine target positions (in radians)
+        targets_radians = []
+        
+        if new_mode == 1:  # MORPH
+            # Servo 1 -> 3000, Servo 5 -> 1500, Others -> 2095
+            targets_radians.append(self.ticks_to_radians(self.MORPH_SERVO_1_TICKS)) # servo_1
+            targets_radians.append(self.ticks_to_radians(self.IDLE_TICKS))          # servo_2
+            targets_radians.append(self.ticks_to_radians(self.MORPH_SERVO_5_TICKS)) # servo_5
+            targets_radians.append(self.ticks_to_radians(self.IDLE_TICKS))          # servo_6
+            self.get_logger().info(f'Transitioning to MORPH positions: S1={self.MORPH_SERVO_1_TICKS}, S5={self.MORPH_SERVO_5_TICKS}')
+        else:
+            # All to IDLE (2095)
+            targets_radians = [self.ticks_to_radians(self.IDLE_TICKS)] * 4
+            self.get_logger().info(f'Transitioning to IDLE position: {self.IDLE_TICKS} ticks')
+            
+        # Publish commands
+        cmd_msg = Float64MultiArray()
+        cmd_msg.data = targets_radians
+        self.pos_cmd_pub.publish(cmd_msg)
+        
+        # Debug output in ticks for user reference
+        self.get_logger().info(f'Published positions to /position_controller/commands')
 
 
 def main(args=None):

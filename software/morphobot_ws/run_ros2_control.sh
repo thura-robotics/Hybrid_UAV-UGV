@@ -4,4 +4,4 @@
 
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 source install/setup.bash
-ros2 launch ugv_motor_driver robot_control_only.launch.py
+ros2 launch ugv_motor_driver robot_control.launch.py

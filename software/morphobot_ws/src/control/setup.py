@@ -24,11 +24,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'mode_manager_node = control.mode_manager_node:main',
             'ugv_control_node = control.ugv_control_node:main',
             'morphing_control_node = control.morphing_control_node:main',
             'px4_rc_bridge = control.px4_rc_bridge:main',
-            'ugv_motor_controller = control.ugv_motor_controller:main',
         ],
     },
 )

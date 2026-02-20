@@ -12,99 +12,114 @@ Publishes to:
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float64MultiArray
-from geometry_msgs.msg import Twist
+from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float32MultiArray
 
 
 class UGVControlNode(Node):
-    """UGV control - publishes to velocity controller."""
+    """UGV control - converts RC commands to velocity controller commands."""
     
     def __init__(self):
         super().__init__('ugv_control_node')
         
         # Parameters
-        self.declare_parameter('max_velocity', 1000.0)  # Max servo velocity
-        self.declare_parameter('velocity_scale', 1000.0)  # Scale factor for cmd_vel
+        self.declare_parameter('max_ticks', 3400)       # Max servo velocity in ticks
+        self.declare_parameter('invert_right', True)    # Right motor is physically reversed
+        self.declare_parameter('deadzone', 0.05)
         
-        self.max_velocity = self.get_parameter('max_velocity').get_parameter_value().double_value
-        self.velocity_scale = self.get_parameter('velocity_scale').get_parameter_value().double_value
+        self.max_ticks = self.get_parameter('max_ticks').value
+        self.invert_right = self.get_parameter('invert_right').value
+        self.deadzone = self.get_parameter('deadzone').value
         
         # State
-        self.active = False  # Only active in CRAWL mode
-        self.current_linear_vel = 0.0
-        self.current_angular_vel = 0.0
+        self.ugv_active = False  # Only active when mode == 2 (UGV)
         
-        # Subscribers
+        # Subscribe to mode from px4_rc_bridge  (/robot/mode → [0=UAV, 1=MORPH, 2=UGV])
         self.mode_sub = self.create_subscription(
-            String,
-            '/robot_mode',
+            Float32MultiArray,
+            '/robot/mode',
             self.mode_callback,
             10
         )
         
-        self.cmd_vel_sub = self.create_subscription(
-            Twist,
-            '/cmd_vel',
-            self.cmd_vel_callback,
+        # Subscribe to RC motor commands from px4_rc_bridge ([throttle, steering])
+        self.motor_cmd_sub = self.create_subscription(
+            Float32MultiArray,
+            '/ugv/motor_commands',
+            self.motor_cmd_callback,
             10
         )
         
-        # Publisher to velocity controller (ROS2 Control)
+        # Publisher to velocity controller (ROS2 Control) — [left_ticks, right_ticks]
         self.vel_cmd_pub = self.create_publisher(
             Float64MultiArray,
             '/velocity_controller/commands',
             10
         )
         
-        self.get_logger().info('UGV Control initialized (ROS2 Control mode)')
-        self.get_logger().info(f'Max velocity: {self.max_velocity}')
-        self.get_logger().info(f'Velocity scale: {self.velocity_scale}')
+        self.get_logger().info('UGV Control Node started')
+        self.get_logger().info('Subscribing: /robot/mode + /ugv/motor_commands')
+        self.get_logger().info('Publishing:  /velocity_controller/commands')
+        self.get_logger().info(f'Max ticks: ±{self.max_ticks}, Invert right: {self.invert_right}')
     
-    def mode_callback(self, msg):
-        """Handle mode changes."""
-        if msg.data == "CRAWL":
-            if not self.active:
-                self.get_logger().info('UGV Control activated (CRAWL mode)')
-                self.active = True
-        else:
-            if self.active:
-                self.get_logger().info(f'UGV Control deactivated (mode: {msg.data})')
-                self.active = False
-                self.stop_wheels()
+    def mode_callback(self, msg: Float32MultiArray):
+        """Activate only in UGV mode (mode == 2.0)."""
+        if len(msg.data) < 1:
+            return
+        mode = int(msg.data[0])
+        if mode == 2 and not self.ugv_active:
+            self.get_logger().info('UGV mode active — motors enabled')
+            self.ugv_active = True
+        elif mode != 2 and self.ugv_active:
+            self.get_logger().info('Left UGV mode — stopping motors')
+            self.ugv_active = False
+            self.stop_wheels()
     
-    def cmd_vel_callback(self, msg):
+    def motor_cmd_callback(self, msg: Float32MultiArray):
         """
-        Handle velocity commands.
-        
-        TODO: Implement proper kinematics
-        - Convert Twist to wheel velocities
-        - Handle differential drive
-        - Apply velocity limits
+        Convert [throttle, steering] to [left_ticks, right_ticks] for velocity controller.
+        Only processes commands when in UGV mode.
         """
-        if not self.active:
+        if not self.ugv_active or len(msg.data) < 2:
             return
         
-        self.current_linear_vel = msg.linear.x
-        self.current_angular_vel = msg.angular.z
+        throttle = float(msg.data[0])
+        steering = float(msg.data[1])
         
-        # Simple implementation: just use linear velocity for now
-        # TODO: Implement proper differential drive kinematics
-        velocity = self.current_linear_vel * self.velocity_scale
+        # Apply deadzone
+        if abs(throttle) < self.deadzone:
+            throttle = 0.0
+        if abs(steering) < self.deadzone:
+            steering = 0.0
         
-        # Clamp velocity
-        velocity = max(-self.max_velocity, min(self.max_velocity, velocity))
+        # Differential drive mixing
+        left_norm  = max(-1.0, min(1.0, throttle + steering))
+        right_norm = max(-1.0, min(1.0, throttle - steering))
         
-        self.send_wheel_command(velocity)
+        # Invert right motor (opposite physical mounting)
+        if self.invert_right:
+            right_norm = -right_norm
+        
+        # Scale to ticks
+        left_ticks  = left_norm  * self.max_ticks
+        right_ticks = right_norm * self.max_ticks
+        
+        self.send_wheel_command(left_ticks, right_ticks)
+        
+        self.get_logger().info(
+            f'T:{throttle:.2f} S:{steering:.2f} → L:{left_ticks:.0f} R:{right_ticks:.0f} ticks',
+            throttle_duration_sec=1.0
+        )
     
-    def send_wheel_command(self, velocity):
+    def send_wheel_command(self, left_ticks, right_ticks):
         """Send velocity command to ROS2 Control velocity controller."""
         msg = Float64MultiArray()
-        msg.data = [float(velocity)]  # One value per joint in velocity controller
+        msg.data = [float(left_ticks), float(right_ticks)]
         self.vel_cmd_pub.publish(msg)
     
     def stop_wheels(self):
         """Stop all wheel servos."""
-        self.send_wheel_command(0.0)
+        self.send_wheel_command(0.0, 0.0)
         self.get_logger().info('Wheels stopped')
 
 
