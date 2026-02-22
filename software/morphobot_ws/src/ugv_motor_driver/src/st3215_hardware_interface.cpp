@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
@@ -116,6 +117,10 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_configure(
   // Create ROS 2 node for service clients
   node_ = rclcpp::Node::make_shared("st3215_hardware_interface_client");
   
+  // Create dedicated executor for the node (avoids conflicts with controller_manager's executor)
+  executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor_->add_node(node_);
+  
   // Create service clients
   read_client_ = node_->create_client<srv::ReadPositions>("st3215/read_positions");
   write_client_ = node_->create_client<srv::WritePositions>("st3215/write_positions");
@@ -152,6 +157,16 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_configure(
   }
   
   RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Connected to ST3215 services!");
+
+  // Start executor in background thread so it can process service responses
+  executor_running_ = true;
+  executor_thread_ = std::thread([this]() {
+    while (executor_running_.load()) {
+      executor_->spin_some(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  });
+  RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Executor thread started.");
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }
@@ -203,52 +218,77 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_activate(
 {
   RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Activating hardware interface...");
 
-  // Read initial positions (note: velocity-mode servos may return 0)
-  auto request = std::make_shared<srv::ReadPositions::Request>();
-  request->servo_ids = servo_ids_;
-  
-  auto result = read_client_->async_send_request(request);
-  
-  if (rclcpp::spin_until_future_complete(node_, result, 5s) == rclcpp::FutureReturnCode::SUCCESS)
+  // Read initial positions with retry logic (serial bus may need time after configuring 12 servos)
+  const int max_retries = 5;
+  bool read_success = false;
+
+  for (int attempt = 1; attempt <= max_retries; attempt++)
   {
-    auto response = result.get();
-    if (response->positions.size() == servo_ids_.size())
+    RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"),
+                "Reading initial positions (attempt %d/%d)...", attempt, max_retries);
+
+    auto request = std::make_shared<srv::ReadPositions::Request>();
+    request->servo_ids = servo_ids_;
+    
+    auto result = read_client_->async_send_request(request);
+    
+    if (result.wait_for(15s) == std::future_status::ready)
     {
-      for (size_t i = 0; i < servo_ids_.size(); i++)
+      auto response = result.get();
+      if (response->positions.size() == servo_ids_.size())
       {
-        int servo_id = servo_ids_[i];
-        size_t joint_idx = servo_to_joint_map_[servo_id];
+        for (size_t i = 0; i < servo_ids_.size(); i++)
+        {
+          int servo_id = servo_ids_[i];
+          size_t joint_idx = servo_to_joint_map_[servo_id];
+          
+          hw_positions_[joint_idx] = ticks_to_radians(response->positions[i]);
+          hw_position_commands_[joint_idx] = hw_positions_[joint_idx];
+          hw_velocities_[joint_idx] = 0.0;
+          hw_velocity_commands_[joint_idx] = 0.0;
+          hw_efforts_[joint_idx] = 0.0;
+          
+          RCLCPP_INFO(
+            rclcpp::get_logger("ST3215HardwareInterface"),
+            "Servo %d (joint index %zu) initial position: %.3f rad", 
+            servo_id, joint_idx, hw_positions_[joint_idx]);
+        }
         
-        hw_positions_[joint_idx] = ticks_to_radians(response->positions[i]);
-        hw_position_commands_[joint_idx] = hw_positions_[joint_idx];
-        hw_velocities_[joint_idx] = 0.0;
-        hw_velocity_commands_[joint_idx] = 0.0;
-        hw_efforts_[joint_idx] = 0.0;
+        if (!response->success)
+        {
+          RCLCPP_WARN(rclcpp::get_logger("ST3215HardwareInterface"),
+                      "Position read reported issues: %s (continuing anyway)", response->message.c_str());
+        }
         
-        RCLCPP_INFO(
-          rclcpp::get_logger("ST3215HardwareInterface"),
-          "Servo %d (joint index %zu) initial position: %.3f rad", 
-          servo_id, joint_idx, hw_positions_[joint_idx]);
+        read_success = true;
+        break;  // Success, exit retry loop
       }
-      
-      if (!response->success)
+      else
       {
         RCLCPP_WARN(rclcpp::get_logger("ST3215HardwareInterface"),
-                    "Position read reported issues: %s (continuing anyway)", response->message.c_str());
+                     "Position array size mismatch: expected %zu, got %zu (attempt %d/%d)", 
+                     servo_ids_.size(), response->positions.size(), attempt, max_retries);
       }
     }
     else
     {
-      RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
-                   "Position array size mismatch: expected %zu, got %zu", 
-                   servo_ids_.size(), response->positions.size());
-      return hardware_interface::CallbackReturn::ERROR;
+      RCLCPP_WARN(rclcpp::get_logger("ST3215HardwareInterface"),
+                   "Timeout reading initial positions (attempt %d/%d)", attempt, max_retries);
+    }
+
+    // Wait before retrying
+    if (attempt < max_retries)
+    {
+      RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"),
+                  "Retrying in 2 seconds...");
+      std::this_thread::sleep_for(2s);
     }
   }
-  else
+
+  if (!read_success)
   {
     RCLCPP_ERROR(rclcpp::get_logger("ST3215HardwareInterface"),
-                 "Timeout reading initial positions");
+                 "Failed to read initial positions after %d attempts", max_retries);
     return hardware_interface::CallbackReturn::ERROR;
   }
 
@@ -260,6 +300,14 @@ hardware_interface::CallbackReturn ST3215HardwareInterface::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Deactivating hardware interface...");
+
+  // Stop executor thread
+  executor_running_ = false;
+  if (executor_thread_.joinable()) {
+    executor_thread_.join();
+  }
+  RCLCPP_INFO(rclcpp::get_logger("ST3215HardwareInterface"), "Executor thread stopped.");
+
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
@@ -272,8 +320,7 @@ hardware_interface::return_type ST3215HardwareInterface::read(
   
   auto pos_future = read_client_->async_send_request(pos_request);
   
-  if (rclcpp::spin_until_future_complete(node_, pos_future, 100ms) == 
-      rclcpp::FutureReturnCode::SUCCESS)
+  if (pos_future.wait_for(500ms) == std::future_status::ready)
   {
     auto response = pos_future.get();
     if (response->success && response->positions.size() == servo_ids_.size())
@@ -307,8 +354,7 @@ hardware_interface::return_type ST3215HardwareInterface::read(
   
   auto vel_future = read_velocities_client_->async_send_request(vel_request);
   
-  if (rclcpp::spin_until_future_complete(node_, vel_future, 100ms) == 
-      rclcpp::FutureReturnCode::SUCCESS)
+  if (vel_future.wait_for(500ms) == std::future_status::ready)
   {
     auto response = vel_future.get();
     if (response->success && response->velocities.size() == servo_ids_.size())
@@ -377,8 +423,7 @@ hardware_interface::return_type ST3215HardwareInterface::write(
     
     auto vel_future = write_velocities_client_->async_send_request(vel_request);
     
-    if (rclcpp::spin_until_future_complete(node_, vel_future, 100ms) == 
-        rclcpp::FutureReturnCode::SUCCESS)
+    if (vel_future.wait_for(500ms) == std::future_status::ready)
     {
       auto response = vel_future.get();
       if (!response->success)
@@ -420,8 +465,7 @@ hardware_interface::return_type ST3215HardwareInterface::write(
     
     auto pos_future = write_client_->async_send_request(pos_request);
     
-    if (rclcpp::spin_until_future_complete(node_, pos_future, 100ms) == 
-        rclcpp::FutureReturnCode::SUCCESS)
+    if (pos_future.wait_for(500ms) == std::future_status::ready)
     {
       auto response = pos_future.get();
       if (!response->success)

@@ -5,8 +5,14 @@
   <xacro:property name="servo_1_id" value="1" />
   <xacro:property name="servo_2_id" value="2" />
   <xacro:property name="servo_3_id" value="3" />
+  <xacro:property name="servo_4_id" value="4" />
   <xacro:property name="servo_5_id" value="5" />
   <xacro:property name="servo_6_id" value="6" />
+  <xacro:property name="servo_7_id" value="7" />
+  <xacro:property name="servo_8_id" value="8" />
+  <xacro:property name="servo_9_id" value="9" />
+  <xacro:property name="servo_10_id" value="13" />
+  <xacro:property name="servo_11_id" value="11" />
   <xacro:property name="servo_12_id" value="12" />
 
   <!-- Base link -->
@@ -21,7 +27,7 @@
     </visual>
   </link>
 
-  <!-- Servo 1 link and joint -->
+  <!-- Servo 1 link and joint (Position) -->
   <link name="servo_link_1">
     <visual>
       <geometry>
@@ -41,7 +47,7 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
-  <!-- Servo 2 link and joint -->
+  <!-- Servo 2 link and joint (Position) -->
   <link name="servo_link_2">
     <visual>
       <geometry>
@@ -61,7 +67,7 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
-  <!-- Servo 3 link and joint -->
+  <!-- Servo 3 link and joint (Velocity) -->
   <link name="servo_link_3">
     <visual>
       <geometry>
@@ -81,7 +87,27 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
-  <!-- Servo 5 link and joint -->
+  <!-- Servo 4 link and joint (Position) -->
+  <link name="servo_link_4">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_4" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_4"/>
+    <origin xyz="0 -0.05 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 5 link and joint (Position) -->
   <link name="servo_link_5">
     <visual>
       <geometry>
@@ -101,7 +127,7 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
-  <!-- Servo 6 link and joint -->
+  <!-- Servo 6 link and joint (Velocity) -->
   <link name="servo_link_6">
     <visual>
       <geometry>
@@ -121,15 +147,135 @@
     <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
   </joint>
 
+  <!-- Servo 7 link and joint (Position) -->
+  <link name="servo_link_7">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_7" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_7"/>
+    <origin xyz="0.05 0 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 8 link and joint (Position) -->
+  <link name="servo_link_8">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_8" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_8"/>
+    <origin xyz="0 0.05 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 9 link and joint (Velocity) -->
+  <link name="servo_link_9">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_9" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_9"/>
+    <origin xyz="0 -0.05 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 10 link and joint (Position) -->
+  <link name="servo_link_10">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_10" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_10"/>
+    <origin xyz="-0.05 -0.05 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 11 link and joint (Position) -->
+  <link name="servo_link_11">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_11" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_11"/>
+    <origin xyz="-0.05 0 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
+  <!-- Servo 12 link and joint (Velocity) -->
+  <link name="servo_link_12">
+    <visual>
+      <geometry>
+        <cylinder radius="0.02" length="0.05"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="servo_joint_12" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link_12"/>
+    <origin xyz="-0.05 0.05 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
+  </joint>
+
   <!-- ROS 2 Control hardware interface -->
   <ros2_control name="ST3215HardwareSystem" type="system">
     <hardware>
       <plugin>ugv_motor_driver/ST3215HardwareInterface</plugin>
       <param name="serial_port">/dev/ttyUSB0</param>
-      <param name="servo_ids">1,2,3,5,6,12</param>
+      <param name="servo_ids">1,2,3,4,5,6,7,8,9</param>
     </hardware>
 
-
+    <!-- Position control servos: 1, 2, 4, 5, 7, 8 -->
     <joint name="servo_joint_1">
       <command_interface name="position">
         <param name="min">-3.14</param>
@@ -150,10 +296,21 @@
       <state_interface name="effort"/>
     </joint>
 
+    <!-- Velocity control: servo 3 -->
     <joint name="servo_joint_3">
       <command_interface name="velocity">
         <param name="min">-255</param>
         <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_4">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
@@ -170,7 +327,18 @@
       <state_interface name="effort"/>
     </joint>
 
+    <!-- Velocity control: servo 6 -->
     <joint name="servo_joint_6">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <joint name="servo_joint_7">
       <command_interface name="position">
         <param name="min">-3.14</param>
         <param name="max">3.14</param>
@@ -180,7 +348,18 @@
       <state_interface name="effort"/>
     </joint>
 
-    <joint name="servo_joint_12">
+    <joint name="servo_joint_8">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+    <!-- Velocity control: servo 9 -->
+    <joint name="servo_joint_9">
       <command_interface name="velocity">
         <param name="min">-255</param>
         <param name="max">255</param>
@@ -189,93 +368,8 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
+
+
   </ros2_control>
-
-  <!-- Servo 12 link and joint -->
-  <link name="servo_link_12">
-    <visual>
-      <geometry>
-        <cylinder radius="0.02" length="0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
-  <joint name="servo_joint_12" type="revolute">
-    <parent link="base_link"/>
-    <child link="servo_link_12"/>
-    <origin xyz="-0.05 0.05 0" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
-  </joint>
-
-  <!-- OLD SERVOS - COMMENTED OUT -->
-  <!-- Servo 4 link and joint -->
-  <!--
-  <link name="servo_link_4">
-    <visual>
-      <geometry>
-        <cylinder radius="0.02" length="0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
-  <joint name="servo_joint_4" type="revolute">
-    <parent link="base_link"/>
-    <child link="servo_link_4"/>
-    <origin xyz="0 -0.05 0.05" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
-  </joint>
-  -->
-
-  <!-- Servo 9 link and joint -->
-  <!--
-  <link name="servo_link_9">
-    <visual>
-      <geometry>
-        <cylinder radius="0.02" length="0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
-  <joint name="servo_joint_9" type="revolute">
-    <parent link="base_link"/>
-    <child link="servo_link_9"/>
-    <origin xyz="0 -0.05 0" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
-  </joint>
-  -->
-
-  <!-- Servo 10 link and joint -->
-  <!--
-  <link name="servo_link_10">
-    <visual>
-      <geometry>
-        <cylinder radius="0.02" length="0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
-  <joint name="servo_joint_10" type="revolute">
-    <parent link="base_link"/>
-    <child link="servo_link_10"/>
-    <origin xyz="-0.05 -0.05 0" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="10" velocity="5"/>
-  </joint>
-  -->
 
 </robot>

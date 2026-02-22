@@ -4,6 +4,7 @@ ROS 2 service node that wraps the ST3215 Python library.
 Provides services for the C++ hardware interface to call.
 """
 
+import time
 import rclpy
 from rclpy.node import Node
 from ugv_motor_driver.srv import ReadPositions, WritePositions, WriteVelocities, ReadVelocities
@@ -51,17 +52,32 @@ class ST3215ServiceNode(Node):
             # Configure servos based on position_servo_ids and velocity_servo_ids
             for sid in self.servo_ids:
                 if sid in self.velocity_servo_ids:
+                    self.servo.StopServo(sid)  # Disable torque before mode switch
+                    time.sleep(0.01)
                     self.servo.SetMode(sid, 1)  # Velocity mode
                     self.get_logger().info(f'Servo {sid} configured for velocity mode')
                 elif sid in self.position_servo_ids:
+                    # Read current position for logging
+                    cur_pos = self.servo.ReadPosition(sid)
+                    # Set mode/speed/acceleration WITHOUT disabling torque.
+                    # Calling StopServo here would allow loaded servos (e.g. servo 10)
+                    # to drift under gravity, then stall when the control loop
+                    # re-engages torque at the new (wrong) position.
                     self.servo.SetMode(sid, 0)  # Position mode
-                    self.servo.SetSpeed(sid, 400)  # Set constant speed to 400
+                    self.servo.SetSpeed(sid, 400)
                     self.servo.SetAcceleration(sid, 50)
-                    self.get_logger().info(f'Servo {sid} configured for position mode (speed: 400)')
+                    self.get_logger().info(f'Servo {sid} configured for position mode (speed: 400, pos: {cur_pos})')
                 else:
                     self.get_logger().warn(f'Servo {sid} not in position or velocity list, skipping configuration')
+                time.sleep(0.01)  # Small delay between servos
             
             self.get_logger().info(f'Configured servos: {self.servo_ids}')
+            
+            # Flush serial buffers after bulk configuration to prevent stale data
+            self.servo.portHandler.ser.reset_input_buffer()
+            self.servo.portHandler.ser.reset_output_buffer()
+            time.sleep(0.5)  # Let serial bus settle
+            self.get_logger().info('Serial buffers flushed, bus settled')
             
         except Exception as e:
             self.get_logger().error(f'Failed to initialize ST3215: {e}')
@@ -100,30 +116,51 @@ class ST3215ServiceNode(Node):
         self.get_logger().info('  - /st3215/read_velocities')
     
     def read_positions_callback(self, request, response):
-        """Read positions from specified servos."""
+        """Read positions from specified servos with per-servo retry logic."""
         try:
             positions = []
+            has_failures = False
             for servo_id in request.servo_ids:
                 # Velocity mode servos don't have meaningful position readings
-                # Return 0 as a placeholder since position is not meaningful in velocity mode
                 if servo_id in self.velocity_servo_ids:
                     positions.append(0)
+                    continue
+                
+                pos = None
+                for attempt in range(2):
+                    # Flush input buffer before each read to clear stale data
+                    self.servo.portHandler.ser.reset_input_buffer()
+                    time.sleep(0.005)  # Let bus settle after flush
+                    
+                    try:
+                        pos = self.servo.ReadPosition(servo_id)
+                        if pos is not None:
+                            break
+                    except Exception as read_err:
+                        self.get_logger().warn(
+                            f'Servo {servo_id} read attempt {attempt+1}/2 exception: {read_err}'
+                        )
+                    time.sleep(0.05)  # Wait before retry
+                
+                if pos is not None:
+                    positions.append(pos)
                 else:
-                    pos = self.servo.ReadPosition(servo_id)
-                    if pos is not None:
-                        positions.append(pos)
-                    else:
-                        response.success = False
-                        response.message = f'Failed to read servo {servo_id}'
-                        return response
+                    # Don't abort - continue reading remaining servos
+                    positions.append(0)
+                    has_failures = True
+                    self.get_logger().warn(f'Servo {servo_id} read failed, using 0')
+                
+                # Small delay between servo reads to prevent bus congestion
+                time.sleep(0.005)
             
             response.positions = positions
             response.success = True
-            response.message = 'OK'
+            response.message = 'OK (some servos failed)' if has_failures else 'OK'
             
         except Exception as e:
             response.success = False
             response.message = str(e)
+            response.positions = []
             self.get_logger().error(f'Read error: {e}')
         
         return response

@@ -62,6 +62,13 @@ class Px4RcBridge(Node):
             10
         )
         
+        # Publisher for UAV RC commands (only used in mode 0) [roll, pitch, throttle, yaw]
+        self.uav_rc_pub = self.create_publisher(
+            Float32MultiArray,
+            '/uav/rc_commands',
+            10
+        )
+        
         self.get_logger().info('PX4 RC Bridge started')
         self.get_logger().info(f'Mode channel: {self.mode_channel + 1} (1-indexed)')
         self.get_logger().info(f'Thresholds: UAV<{self.mode_uav_threshold}, MORPH>{self.mode_morph_threshold}')
@@ -99,7 +106,7 @@ class Px4RcBridge(Node):
         # Print what we SUBSCRIBE to (raw PWM from MAVROS)
         channels_str = ', '.join([str(ch) for ch in msg.channels[:8]])  # Show first 8 channels
         self.get_logger().info(
-            f'📥 SUBSCRIBED: /mavros/rc/in → PWM[{channels_str}]',
+            f'SUBSCRIBED: /mavros/rc/in → PWM[{channels_str}]',
             throttle_duration_sec=2.0
         )
         
@@ -121,7 +128,7 @@ class Px4RcBridge(Node):
         
         # Print what we PUBLISH to /robot/mode
         self.get_logger().info(
-            f'📤 PUBLISHED: /robot/mode → {self.current_mode} ({mode_names[self.current_mode]})',
+            f'PUBLISHED: /robot/mode → {self.current_mode} ({mode_names[self.current_mode]})',
             throttle_duration_sec=2.0
         )
         
@@ -134,7 +141,7 @@ class Px4RcBridge(Node):
         if len(channels_msg.data) >= 8:
             pwm_str = ', '.join([f'{int(ch)}' for ch in channels_msg.data[:8]])  # Show first 8
             self.get_logger().info(
-                f'📤 PUBLISHED: /rc/channels → PWM[{pwm_str}]',
+                f'PUBLISHED: /rc/channels → PWM[{pwm_str}]',
                 throttle_duration_sec=2.0
             )
         
@@ -153,7 +160,30 @@ class Px4RcBridge(Node):
             self.ugv_motor_pub.publish(motor_cmd)
             
             self.get_logger().info(
-                f'📤 PUBLISHED: /ugv/motor_commands → Throttle:{throttle:.2f}, Steering:{steering:.2f}',
+                f'PUBLISHED: /ugv/motor_commands → Throttle:{throttle:.2f}, Steering:{steering:.2f}',
+                throttle_duration_sec=2.0
+            )
+            
+        # If in UAV mode (mode 0), publish UAV RC commands [roll, pitch, throttle, yaw]
+        elif self.current_mode == 0 and len(msg.channels) >= 4:
+            # Standard PX4 channel mapping: 1=Roll, 2=Pitch, 3=Throttle, 4=Yaw
+            roll_pwm = msg.channels[0]
+            pitch_pwm = msg.channels[1]
+            throttle_pwm = msg.channels[2]
+            yaw_pwm = msg.channels[3]
+            
+            roll = self.normalize_pwm(roll_pwm)
+            pitch = self.normalize_pwm(pitch_pwm)
+            throttle = (throttle_pwm - self.pwm_min) / (self.pwm_max - self.pwm_min) # 0.0 to 1.0 for throttle
+            throttle = max(0.0, min(1.0, throttle))
+            yaw = self.normalize_pwm(yaw_pwm)
+            
+            uav_msg = Float32MultiArray()
+            uav_msg.data = [roll, pitch, throttle, yaw]
+            self.uav_rc_pub.publish(uav_msg)
+            
+            self.get_logger().info(
+                f'PUBLISHED: /uav/rc_commands → R:{roll:.2f} P:{pitch:.2f} T:{throttle:.2f} Y:{yaw:.2f}',
                 throttle_duration_sec=2.0
             )
 

@@ -1,6 +1,7 @@
 #ifndef HYBRID_ROBOT_HARDWARE__ST3215_HARDWARE_INTERFACE_HPP_
 #define HYBRID_ROBOT_HARDWARE__ST3215_HARDWARE_INTERFACE_HPP_
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -50,8 +51,11 @@ public:
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
-  // ROS 2 node for service clients
+  // ROS 2 node and executor for service clients
   rclcpp::Node::SharedPtr node_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
+  std::thread executor_thread_;
+  std::atomic<bool> executor_running_{false};
   
   // Service clients
   rclcpp::Client<srv::ReadPositions>::SharedPtr read_client_;

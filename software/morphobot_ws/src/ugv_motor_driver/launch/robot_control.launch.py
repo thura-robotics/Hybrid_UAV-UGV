@@ -10,6 +10,7 @@ from launch.actions import RegisterEventHandler, DeclareLaunchArgument, TimerAct
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -42,7 +43,7 @@ def generate_launch_description():
         ]
     )
     
-    robot_description = {"robot_description": robot_description_content}
+    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
 
     # Get controller configuration
     robot_controllers = PathJoinSubstitution(
@@ -113,7 +114,7 @@ def generate_launch_description():
 
     # Delay control node start until service node is ready (give it 3 seconds)
     delay_control_node_after_service = TimerAction(
-        period=3.0,
+        period=5.0,
         actions=[control_node],
     )
 

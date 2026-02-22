@@ -1,7 +1,13 @@
 st3215_service_node:
   ros__parameters:
-    serial_port: "/dev/ttyUSB0"
-    servo_ids: [1,2,3,5,6,12]
-    position_servo_ids: [1,2,5,6]
-    velocity_servo_ids: [3,12]
-
+    serial_port: "/dev/ttyUSB1"
+    # servo_ids: [10,12]
+    # position_servo_ids: [10]
+    # velocity_servo_ids: [12]
+    servo_ids: [1,2,3,4,5,6,7,8,9,13,11,12]
+    position_servo_ids: [1,2,4,5,7,8,13,11]
+    velocity_servo_ids: [3,6,9,12]
+    # Per-servo position limits in ticks [min, max] (0-4095).
+    # Servo 13 has physical limit around 2048-2500
+    servo_13_min: 2048
+    servo_13_max: 2500

@@ -16,6 +16,7 @@
   <depend>geometry_msgs</depend>
   <depend>ugv_motor_driver</depend>
   <depend>mavros_msgs</depend>
+  <depend>px4_msgs</depend>
   
 
   <test_depend>ament_copyright</test_depend>

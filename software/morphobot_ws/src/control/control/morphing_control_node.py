@@ -1,109 +1,118 @@
 #!/usr/bin/env python3
 """
-Morphing Control Node - Manages servo position sequences for robot transformation.
+Morphing Control Node
 
-Subscribes to:
-- /robot/mode: Current robot mode (0=UAV, 1=MORPH, 2=UGV)
+Joint order for /position_controller/commands: S1, S2, S4, S5, S7, S8
+                                    index:      0   1   2   3   4   5
 
-Publishes to:
-- /position_controller/commands: Commands to ROS2 Control position controller (servos 1, 2, 5, 6)
+HOME:  S1=2048 S2=2760 S4=2048 S5=1200 S7=2048 S8=1200
+
+UAV sequence (after going home):
+  Step 1 → S2=2048, S5=2048, S8=2048
+  Step 2 → S1=900,  S4=2900, S7=2900
+  Step 3 → S2=2900, S5=1000, S8=1000
+
+MORPH / UGV / default: go to HOME
 """
-
+import math
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
-from std_msgs.msg import Float32MultiArray
-import math
+from std_msgs.msg import Float64MultiArray, Float32MultiArray
+
+STEP_DELAY = 2.0   # seconds between UAV sequence steps
+
+#              S1    S2    S4    S5    S7    S8
+HOME      = [2048, 2760, 2048, 1200, 2048, 1200]
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048]  # S2, S5, S8 → 2048
+UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048]  # S1→900, S4→2900, S7→2900
+UAV_STEP3 = [ 900, 2900, 2900, 1000, 2900, 1000]  # S2→2900, S5→1000, S8→1000
+
+UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3]
+
+
+def t2r(ticks):
+    return ticks / 4096.0 * 2.0 * math.pi
+
 
 class MorphingControlNode(Node):
-    """Morphing control - moves servos to specific positions based on mode."""
-    
+
     def __init__(self):
         super().__init__('morphing_control_node')
-        
-        # Constants
-        self.IDLE_TICKS = 2095
-        self.MORPH_SERVO_1_TICKS = 3000
-        self.MORPH_SERVO_5_TICKS = 1000
-        
-        # Current state
-        self.current_mode = -1  # Unknown
-        
-        # Subscribe to mode from px4_rc_bridge (/robot/mode → [0=UAV, 1=MORPH, 2=UGV])
-        self.mode_sub = self.create_subscription(
-            Float32MultiArray,
-            '/robot/mode',
-            self.mode_callback,
-            10
-        )
-        
-        # Publisher to position controller (ROS2 Control) — [servo_1, servo_2, servo_5, servo_6]
-        self.pos_cmd_pub = self.create_publisher(
-            Float64MultiArray,
-            '/position_controller/commands',
-            10
-        )
-        
-        self.get_logger().info('Morphing Control Node started')
-        self.get_logger().info('Waiting for /robot/mode messages...')
+        self.current_mode = -1
+        self._positions = list(HOME)
+        self._seq_step = 0
+        self._timer = None
 
-    def ticks_to_radians(self, ticks):
-        """Convert ST3215 ticks (0-4095) to radians (0-2π)."""
-        # Based on ST3215 documentation/hardware interface: 4096 ticks = 2π radians
-        return (float(ticks) / 4096.0) * 2.0 * math.pi
+        self.create_subscription(
+            Float32MultiArray, '/robot/mode', self.mode_callback, 10)
+        self.pub = self.create_publisher(
+            Float64MultiArray, '/position_controller/commands', 10)
+
+        self.get_logger().info('Morphing Control Node ready')
+        self.get_logger().info(
+            'HOME: S1=2048 S2=2760 S4=2048 S5=1200 S7=2048 S8=1200')
+
+    def _publish(self, positions):
+        msg = Float64MultiArray()
+        msg.data = [t2r(t) for t in positions]
+        self.pub.publish(msg)
+        self.get_logger().info(f'Cmd: {positions}')
+
+    def _cancel_timer(self):
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
 
     def mode_callback(self, msg: Float32MultiArray):
-        """Process mode changes and publish servo positions."""
-        if len(msg.data) < 1:
+        if not msg.data:
             return
-            
         new_mode = int(msg.data[0])
-        
-        # Only act if mode has changed
         if new_mode == self.current_mode:
             return
-            
         self.current_mode = new_mode
-        mode_names = {0: "UAV", 1: "MORPH", 2: "UGV"}
-        mode_name = mode_names.get(new_mode, "UNKNOWN")
-        
-        self.get_logger().info(f'Detected Mode Change: {mode_name} ({new_mode})')
-        
-        # Determine target positions (in radians)
-        targets_radians = []
-        
-        if new_mode == 1:  # MORPH
-            # Servo 1 -> 3000, Servo 5 -> 1500, Others -> 2095
-            targets_radians.append(self.ticks_to_radians(self.MORPH_SERVO_1_TICKS)) # servo_1
-            targets_radians.append(self.ticks_to_radians(self.IDLE_TICKS))          # servo_2
-            targets_radians.append(self.ticks_to_radians(self.MORPH_SERVO_5_TICKS)) # servo_5
-            targets_radians.append(self.ticks_to_radians(self.IDLE_TICKS))          # servo_6
-            self.get_logger().info(f'Transitioning to MORPH positions: S1={self.MORPH_SERVO_1_TICKS}, S5={self.MORPH_SERVO_5_TICKS}')
+        self._cancel_timer()
+
+        names = {0: 'UAV', 1: 'MORPH', 2: 'UGV'}
+        self.get_logger().info(f'Mode → {names.get(new_mode, str(new_mode))}')
+
+        # Always go home first
+        self._positions = list(HOME)
+        self._publish(self._positions)
+        self.get_logger().info('→ HOME')
+
+        if new_mode == 0:   # UAV: run sequence after home
+            self._seq_step = 0
+            self._timer = self.create_timer(STEP_DELAY, self._uav_next_step)
+
+    def _uav_next_step(self):
+        self._cancel_timer()
+        if self._seq_step >= len(UAV_STEPS):
+            self.get_logger().info('UAV sequence complete ✓')
+            return
+        step = UAV_STEPS[self._seq_step]
+        self.get_logger().info(
+            f'UAV step {self._seq_step + 1}/{len(UAV_STEPS)}: {step}')
+        self._publish(step)
+        self._seq_step += 1
+        if self._seq_step < len(UAV_STEPS):
+            self._timer = self.create_timer(STEP_DELAY, self._uav_next_step)
         else:
-            # All to IDLE (2095)
-            targets_radians = [self.ticks_to_radians(self.IDLE_TICKS)] * 4
-            self.get_logger().info(f'Transitioning to IDLE position: {self.IDLE_TICKS} ticks')
-            
-        # Publish commands
-        cmd_msg = Float64MultiArray()
-        cmd_msg.data = targets_radians
-        self.pos_cmd_pub.publish(cmd_msg)
-        
-        # Debug output in ticks for user reference
-        self.get_logger().info(f'Published positions to /position_controller/commands')
+            self.get_logger().info('UAV sequence complete ✓')
 
 
 def main(args=None):
     rclpy.init(args=args)
     node = MorphingControlNode()
-    
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':

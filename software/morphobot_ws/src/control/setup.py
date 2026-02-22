@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ugv_control_node = control.ugv_control_node:main',
+            'uav_control_node = control.uav_control_node:main',
             'morphing_control_node = control.morphing_control_node:main',
             'px4_rc_bridge = control.px4_rc_bridge:main',
         ],
