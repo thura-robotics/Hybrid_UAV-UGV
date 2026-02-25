@@ -18,16 +18,23 @@ import math
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, Float32MultiArray
+from sensor_msgs.msg import JointState
 
-STEP_DELAY = 2.0   # seconds between UAV sequence steps
+STEP_DELAY = 1.5   # seconds between sequence steps
+MATCH_THRESHOLD = 0.057  # ~10 ticks (10/4096 * 2pi)
 
-#              S1    S2    S4    S5    S7    S8
-HOME      = [2048, 2760, 2048, 1200, 2048, 1200]
-UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048]  # S2, S5, S8 → 2048
-UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048]  # S1→900, S4→2900, S7→2900
-UAV_STEP3 = [ 900, 2900, 2900, 1000, 2900, 1000]  # S2→2900, S5→1000, S8→1000
+# Joint Names mapped to indices in UAV/UGV arrays
+JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8']
 
-UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3]
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048]  
+UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048]  
+UAV_HOME  = [ 900, 2900, 2900, 1000, 2900, 1000]  
+UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_HOME]
+
+UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048]  
+UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048]  
+UGV_HOME  = [ 2048, 2900, 2082, 1157, 2023, 1011]  
+UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_HOME]
 
 
 def t2r(ticks):
@@ -39,18 +46,38 @@ class MorphingControlNode(Node):
     def __init__(self):
         super().__init__('morphing_control_node')
         self.current_mode = -1
-        self._positions = list(HOME)
+        
+        self._current_joint_positions = {}
+        self._active_sequence = []
         self._seq_step = 0
         self._timer = None
 
         self.create_subscription(
             Float32MultiArray, '/robot/mode', self.mode_callback, 10)
+        self.create_subscription(
+            JointState, '/joint_states', self._joint_state_callback, 10)
+            
         self.pub = self.create_publisher(
             Float64MultiArray, '/position_controller/commands', 10)
 
-        self.get_logger().info('Morphing Control Node ready')
-        self.get_logger().info(
-            'HOME: S1=2048 S2=2760 S4=2048 S5=1200 S7=2048 S8=1200')
+        self.get_logger().info('Morphing Control Node ready (State-Aware)')
+
+    def _joint_state_callback(self, msg: JointState):
+        for name, pos in zip(msg.name, msg.position):
+            self._current_joint_positions[name] = pos
+
+    def _is_at_position(self, target_ticks):
+        if not self._current_joint_positions:
+            return False
+            
+        for i, name in enumerate(JOINTS):
+            if name not in self._current_joint_positions:
+                return False
+            curr = self._current_joint_positions[name]
+            target = t2r(target_ticks[i])
+            if abs(curr - target) > MATCH_THRESHOLD:
+                return False
+        return True
 
     def _publish(self, positions):
         msg = Float64MultiArray()
@@ -69,35 +96,46 @@ class MorphingControlNode(Node):
         new_mode = int(msg.data[0])
         if new_mode == self.current_mode:
             return
+            
+        old_mode = self.current_mode
         self.current_mode = new_mode
         self._cancel_timer()
 
         names = {0: 'UAV', 1: 'MORPH', 2: 'UGV'}
-        self.get_logger().info(f'Mode → {names.get(new_mode, str(new_mode))}')
+        self.get_logger().info(f'Mode Changed: {names.get(old_mode, "INIT")} → {names.get(new_mode, str(new_mode))}')
 
-        # Always go home first
-        self._positions = list(HOME)
-        self._publish(self._positions)
-        self.get_logger().info('→ HOME')
+        # Handle Transitions to MORPH
+        if new_mode == 1: # MORPH
+            # Check if we were at UGV_HOME or UAV_HOME to decide which way to morph
+            if self._is_at_position(UGV_HOME):
+                self.get_logger().info('Detected UGV_HOME state. Triggering UAV sequence...')
+                self._start_sequence(UAV_STEPS)
+            elif self._is_at_position(UAV_HOME):
+                self.get_logger().info('Detected UAV_HOME state. Triggering UGV sequence...')
+                self._start_sequence(UGV_STEPS)
+            else:
+                self.get_logger().warn('MORPH mode set but robot is not in a known HOME position. No sequence triggered.')
 
-        if new_mode == 0:   # UAV: run sequence after home
-            self._seq_step = 0
-            self._timer = self.create_timer(STEP_DELAY, self._uav_next_step)
+    def _start_sequence(self, steps):
+        self._active_sequence = steps
+        self._seq_step = 0
+        self._next_step()
 
-    def _uav_next_step(self):
+    def _next_step(self):
         self._cancel_timer()
-        if self._seq_step >= len(UAV_STEPS):
-            self.get_logger().info('UAV sequence complete ✓')
+        if self._seq_step >= len(self._active_sequence):
+            self.get_logger().info('Sequence complete ✓')
             return
-        step = UAV_STEPS[self._seq_step]
-        self.get_logger().info(
-            f'UAV step {self._seq_step + 1}/{len(UAV_STEPS)}: {step}')
+            
+        step = self._active_sequence[self._seq_step]
+        self.get_logger().info(f'Step {self._seq_step + 1}/{len(self._active_sequence)}: {step}')
         self._publish(step)
+        
         self._seq_step += 1
-        if self._seq_step < len(UAV_STEPS):
-            self._timer = self.create_timer(STEP_DELAY, self._uav_next_step)
+        if self._seq_step < len(self._active_sequence):
+            self._timer = self.create_timer(STEP_DELAY, self._next_step)
         else:
-            self.get_logger().info('UAV sequence complete ✓')
+            self.get_logger().info('Sequence complete ✓')
 
 
 def main(args=None):
