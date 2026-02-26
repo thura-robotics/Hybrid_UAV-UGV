@@ -24,16 +24,17 @@ STEP_DELAY = 1.5   # seconds between sequence steps
 MATCH_THRESHOLD = 0.057  # ~10 ticks (10/4096 * 2pi)
 
 # Joint Names mapped to indices in UAV/UGV arrays
-JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8']
+JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8', 'servo_joint_10', 'servo_joint_11']
+HOME      = [2048, 2760, 2048, 1200, 2048, 1200,2048, 2760]
 
-UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048]  
-UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048]  
-UAV_HOME  = [ 900, 2900, 2900, 1000, 2900, 1000]  
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
+UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
+UAV_HOME = [ 900, 2900, 2900, 1000, 2900, 1000,900, 2900]  
 UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_HOME]
 
-UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048]  
-UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048]  
-UGV_HOME  = [ 2048, 2900, 2082, 1157, 2023, 1011]  
+UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
+UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
+UGV_HOME = [ 2048, 2900, 2082, 1157, 2023, 1011,2048, 2900]  
 UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_HOME]
 
 

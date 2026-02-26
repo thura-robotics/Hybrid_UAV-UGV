@@ -5,6 +5,6 @@ import time
 s = ST3215('/dev/ttyUSB0')
 
 #read al servo position
-for i in range(1,10):
+for i in range(1,13):
     print('servo',i,':',s.ReadPosition(i))
     time.sleep(0.1)

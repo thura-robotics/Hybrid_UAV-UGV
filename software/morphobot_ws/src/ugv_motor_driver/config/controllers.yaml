@@ -20,6 +20,8 @@ position_controller:
       - servo_joint_5
       - servo_joint_7
       - servo_joint_8
+      - servo_joint_10
+      - servo_joint_11
     interface_name: position
 
 velocity_controller:
@@ -28,4 +30,5 @@ velocity_controller:
       - servo_joint_3
       - servo_joint_6
       - servo_joint_9
+      - servo_joint_12
     interface_name: velocity

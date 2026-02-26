@@ -9,19 +9,19 @@ for i in range(1,10):
     time.sleep(0.1)
 
 
-SERVO_IDS = [1, 2, 4, 5, 7, 8]
+SERVO_IDS = [1, 2, 4, 5, 7, 8,10,11]
 
 #              S1    S2    S4    S5    S7    S8
-HOME      = [2048, 2760, 2048, 1200, 2048, 1200]
+HOME      = [2048, 2760, 2048, 1200, 2048, 1200,2048, 2760]
 
-UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048]  
-UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048]  
-UAV_STEP3 = [ 900, 2900, 2900, 1000, 2900, 1000]  
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
+UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
+UAV_STEP3 = [ 900, 2900, 2900, 1000, 2900, 1000,900, 2900]  
 UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3]
 
-UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048]  
-UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048]  
-UGV_STEP3 = [ 2048, 2900, 2082, 1157, 2023, 1011]  
+UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
+UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
+UGV_STEP3 = [ 2048, 2900, 2082, 1157, 2023, 1011,2048, 2900]  
 UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3]
 
 # Threshold for matching positions (ticks)
@@ -80,7 +80,7 @@ for sid in SERVO_IDS:
     s.SetAcceleration(sid, 50)
 
 # Send command
-for sid, pos in zip(SERVO_IDS, UGV_STEP3):
+for sid, pos in zip(SERVO_IDS, HOME):
     s.WritePosition(sid, pos)
 
 print("Moving... checking status...")

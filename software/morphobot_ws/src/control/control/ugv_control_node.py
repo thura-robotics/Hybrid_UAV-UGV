@@ -114,12 +114,12 @@ class UGVControlNode(Node):
     def send_wheel_command(self, left_ticks, right_ticks):
         """Send velocity command to ROS2 Control velocity controller.
         
-        Velocity controller joints (in order): servo 3, 6, 9
-        Assumed layout: servos 3 & 9 = one side, servo 6 = other side
-        So we send: [left, right, left]
+        Velocity controller joints (in order): servo 3, 6, 9, 12
+        Assumed layout: servos 3 & 9 = left side, servos 6 & 12 = right side
+        So we send: [left, right, left, right]
         """
         msg = Float64MultiArray()
-        msg.data = [float(left_ticks), float(right_ticks), float(left_ticks)]
+        msg.data = [float(left_ticks), float(right_ticks), float(left_ticks), float(right_ticks)]
         self.vel_cmd_pub.publish(msg)
     
     def stop_wheels(self):
