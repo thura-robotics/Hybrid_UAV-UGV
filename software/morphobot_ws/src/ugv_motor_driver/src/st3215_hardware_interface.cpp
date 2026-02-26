@@ -409,7 +409,13 @@ hardware_interface::return_type ST3215HardwareInterface::write(
     
     for (size_t idx : velocity_servo_indices)
     {
-      int velocity_value = static_cast<int>(hw_velocity_commands_[idx]);
+      // diff_drive_controller outputs in rad/s, we need to send raw ticks to ST3215
+      // 1 full rotation (2 * PI) = 4096 ticks per second (rough approximation for diff drive testing)
+      // Standard formula: rads / (2*PI) = rotations/sec. 
+      // So ticks = (rads / (2*PI)) * 4096.0
+      double rad_s = hw_velocity_commands_[idx];
+      int velocity_value = static_cast<int>((rad_s / (2.0 * M_PI)) * 4096.0);
+      
       vel_request->servo_ids.push_back(servo_ids_[idx]);
       vel_request->velocities.push_back(velocity_value);
       
@@ -417,8 +423,8 @@ hardware_interface::return_type ST3215HardwareInterface::write(
       RCLCPP_INFO_THROTTLE(
         rclcpp::get_logger("ST3215HardwareInterface"),
         *node_->get_clock(), 500,
-        "Sending velocity to servo %d: %.2f -> %d", 
-        servo_ids_[idx], hw_velocity_commands_[idx], velocity_value);
+        "Sending velocity to servo %d: %.2f rad/s -> %d ticks", 
+        servo_ids_[idx], rad_s, velocity_value);
     }
     
     auto vel_future = write_velocities_client_->async_send_request(vel_request);

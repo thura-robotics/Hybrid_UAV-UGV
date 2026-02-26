@@ -12,8 +12,8 @@ Publishes to:
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import Float32MultiArray
+from geometry_msgs.msg import Twist
 
 
 class UGVControlNode(Node):
@@ -50,16 +50,16 @@ class UGVControlNode(Node):
             10
         )
         
-        # Publisher to velocity controller (ROS2 Control) — [left_ticks, right_ticks]
-        self.vel_cmd_pub = self.create_publisher(
-            Float64MultiArray,
-            '/velocity_controller/commands',
+        # Publisher to diff_drive_controller
+        self.cmd_vel_pub = self.create_publisher(
+            Twist,
+            '/diff_drive_controller/cmd_vel_unstamped',
             10
         )
         
         self.get_logger().info('UGV Control Node started')
         self.get_logger().info('Subscribing: /robot/mode + /ugv/motor_commands')
-        self.get_logger().info('Publishing:  /velocity_controller/commands')
+        self.get_logger().info('Publishing:  /diff_drive_controller/cmd_vel_unstamped')
         self.get_logger().info(f'Max ticks: ±{self.max_ticks}, Invert right: {self.invert_right}')
     
     def mode_callback(self, msg: Float32MultiArray):
@@ -77,7 +77,7 @@ class UGVControlNode(Node):
     
     def motor_cmd_callback(self, msg: Float32MultiArray):
         """
-        Convert [throttle, steering] to [left_ticks, right_ticks] for velocity controller.
+        Convert RC [throttle, steering] into geometry_msgs/Twist for diff_drive_controller.
         Only processes commands when in UGV mode.
         """
         if not self.ugv_active or len(msg.data) < 2:
@@ -92,40 +92,33 @@ class UGVControlNode(Node):
         if abs(steering) < self.deadzone:
             steering = 0.0
         
-        # Differential drive mixing
-        left_norm  = max(-1.0, min(1.0, throttle + steering))
-        right_norm = max(-1.0, min(1.0, throttle - steering))
+        # Max velocity conversion approximations
+        # max_ticks: integer ticks mapped to max physical speed (m/s and rad/s)
+        # diff_drive_controller takes linear.x (m/s) and angular.z (rad/s)
         
-        # Invert right motor (opposite physical mounting)
-        if self.invert_right:
-            right_norm = -right_norm
+        # Scaling joystick (+-1.0 limits) to theoretical limits
+        max_linear_speed = 1.0  # m/s target at full throttle
+        max_angular_speed = 3.0 # rad/s target at full steering
         
-        # Scale to ticks
-        left_ticks  = left_norm  * self.max_ticks
-        right_ticks = right_norm * self.max_ticks
+        twist = Twist()
+        twist.linear.x = throttle * max_linear_speed
         
-        self.send_wheel_command(left_ticks, right_ticks)
+        # If invert_right is true, we might need to adjust the angular direction.
+        # But diff_drive_controller handles wheel inversion internally based on URDF joint definitions.
+        twist.angular.z = steering * max_angular_speed
+        
+        self.cmd_vel_pub.publish(twist)
         
         self.get_logger().info(
-            f'T:{throttle:.2f} S:{steering:.2f} → L:{left_ticks:.0f} R:{right_ticks:.0f} ticks',
+            f'T:{throttle:.2f} S:{steering:.2f} → Vx:{twist.linear.x:.2f} Wz:{twist.angular.z:.2f}',
             throttle_duration_sec=1.0
         )
     
-    def send_wheel_command(self, left_ticks, right_ticks):
-        """Send velocity command to ROS2 Control velocity controller.
-        
-        Velocity controller joints (in order): servo 3, 6, 9, 12
-        Assumed layout: servos 3 & 9 = left side, servos 6 & 12 = right side
-        So we send: [left, right, left, right]
-        """
-        msg = Float64MultiArray()
-        msg.data = [float(left_ticks), float(right_ticks), float(left_ticks), float(right_ticks)]
-        self.vel_cmd_pub.publish(msg)
-    
     def stop_wheels(self):
-        """Stop all wheel servos."""
-        self.send_wheel_command(0.0, 0.0)
-        self.get_logger().info('Wheels stopped')
+        """Stop diff_drive_controller."""
+        twist = Twist() # defaults to 0
+        self.cmd_vel_pub.publish(twist)
+        self.get_logger().info('Wheels stopped (Twist = 0)')
 
 
 def main(args=None):

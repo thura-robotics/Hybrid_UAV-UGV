@@ -8,8 +8,8 @@ controller_manager:
     position_controller:
       type: forward_command_controller/ForwardCommandController
 
-    velocity_controller:
-      type: forward_command_controller/ForwardCommandController
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
 
 position_controller:
   ros__parameters:
@@ -24,11 +24,18 @@ position_controller:
       - servo_joint_11
     interface_name: position
 
-velocity_controller:
+diff_drive_controller:
   ros__parameters:
-    joints:
-      - servo_joint_3
-      - servo_joint_6
-      - servo_joint_9
-      - servo_joint_12
-    interface_name: velocity
+    left_wheel_names: ["servo_joint_3", "servo_joint_6"]
+    right_wheel_names: ["servo_joint_9", "servo_joint_12"]
+    
+    wheel_separation: 0.23 # Approximate, tweak if necessary // 
+    wheel_radius: 0.110 # Approximate, tweak if necessary // 110 mm ot -- 202 diameter // front to back  370mm
+
+    use_stamped_vel: false
+
+    # optional params to prevent sudden jerks
+    linear.x.has_acceleration_limits: true
+    linear.x.max_acceleration: 1.0
+    angular.z.has_acceleration_limits: true
+    angular.z.max_acceleration: 1.0
