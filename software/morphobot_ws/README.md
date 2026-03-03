@@ -28,7 +28,7 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 
 # Msource /opt/ros/humble/setup.bash
 source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
-ros2 run control ugv_control_node
+ros2 launch ugv_motor_driver robot_control.launch.py
 
 
 # UGV control

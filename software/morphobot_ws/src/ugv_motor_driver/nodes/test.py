@@ -21,7 +21,7 @@ UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3]
 
 UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
 UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UGV_STEP3 = [ 2048, 2900, 2082, 1157, 2023, 1011,2048, 2900]  
+UGV_STEP3 = [ 2048, 2900, 2082, 1157, 2023, 1011,2048, 2760]  
 UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3]
 
 # Threshold for matching positions (ticks)
@@ -80,7 +80,7 @@ for sid in SERVO_IDS:
     s.SetAcceleration(sid, 50)
 
 # Send command
-for sid, pos in zip(SERVO_IDS, HOME):
+for sid, pos in zip(SERVO_IDS, UGV_STEP3):
     s.WritePosition(sid, pos)
 
 print("Moving... checking status...")
