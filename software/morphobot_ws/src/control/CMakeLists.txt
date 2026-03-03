@@ -18,6 +18,11 @@ install(DIRECTORY control/
   DESTINATION lib/python3.10/site-packages/${PROJECT_NAME}
 )
 
+# Install launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
 # Install Python executables
 install(PROGRAMS
   control/ugv_control_node.py
