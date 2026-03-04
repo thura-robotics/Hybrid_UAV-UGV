@@ -5,11 +5,11 @@
 source /opt/ros/humble/setup.bash
 
 echo "Launching MAVROS..."
-echo "Connection: /dev/ttyACM0 @ 921600 baud"
+echo "Connection: /dev/ttyUSB0 @ 57600 baud (Telemetry)"
 echo "Press Ctrl+C to stop"
 echo ""
 
-ros2 launch mavros px4.launch fcu_url:=/dev/ttyACM0:921600
+ros2 launch mavros px4.launch fcu_url:=/dev/ttyUSB0:57600
 
 # Alternative connection options (uncomment as needed):
 # USB: fcu_url:=/dev/ttyACM0:921600
