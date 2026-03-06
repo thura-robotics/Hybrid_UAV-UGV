@@ -21,21 +21,24 @@ from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 
 STEP_DELAY = 1.5   # seconds between sequence steps
-MATCH_THRESHOLD = 0.057  # ~10 ticks (10/4096 * 2pi)
+MATCH_THRESHOLD = 0.00732  # ~30 ticks (20/4096 * 2pi)
 
 # Joint Names mapped to indices in UAV/UGV arrays
 JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8', 'servo_joint_10', 'servo_joint_11']
-HOME      = [2048, 2760, 2048, 1200, 2048, 1200,2048, 2760]
+HOME      = [2042, 2939, 2051, 995, 2056, 1145, 2045, 2998] 
 
 UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UAV_STEP2 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
-UAV_HOME = [ 900, 2900, 2900, 1000, 2900, 1000,900, 2900]  
-UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_HOME]
+UAV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
+UAV_STEP3 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
+UAV_HOME = [ 1000, 2976, 3067, 998, 3088, 1132,1030, 3001]  
+UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3,UAV_HOME]
 
-UGV_STEP1 = [ 900, 2048, 2900, 2048, 2900, 2048,900, 2048]  
-UGV_STEP2 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UGV_HOME = [ 2048, 2900, 2082, 1157, 2023, 1011,2048, 2760]  
-UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_HOME]
+UGV_STEP1 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
+UGV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
+
+UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
+UGV_HOME = [2042, 2939, 2051, 995, 2056, 1145, 2045, 2998] 
+UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3,UGV_HOME]
 
 
 def t2r(ticks):

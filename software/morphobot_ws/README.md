@@ -38,6 +38,11 @@ ros2 run control ugv_control_node
 ros2 run control morphing_control_node
 ```
 
+
+source /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
+ros2 run control system_monitor.py
+
+
 ## Monitoring
 
 ### Check PX4 RC Input (Raw PWM)

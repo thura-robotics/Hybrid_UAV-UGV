@@ -26,8 +26,10 @@ install(DIRECTORY launch/
 # Install Python executables
 install(PROGRAMS
   control/ugv_control_node.py
+  control/uav_control_node.py
   control/morphing_control_node.py
   control/px4_rc_bridge.py
+  control/system_monitor.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
