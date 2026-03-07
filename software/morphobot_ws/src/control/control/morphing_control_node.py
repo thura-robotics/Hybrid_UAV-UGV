@@ -20,25 +20,27 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 
-STEP_DELAY = 1.5   # seconds between sequence steps
-MATCH_THRESHOLD = 0.00732  # ~30 ticks (20/4096 * 2pi)
+STEP_DELAY = 3.0   # seconds between sequence steps
+MATCH_THRESHOLD = 0.077   # ~50 ticks (50/4096 * 2π)
 
 # Joint Names mapped to indices in UAV/UGV arrays
 JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8', 'servo_joint_10', 'servo_joint_11']
-HOME      = [2042, 2939, 2051, 995, 2056, 1145, 2045, 2998] 
+HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
 
 UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UAV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
-UAV_STEP3 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
-UAV_HOME = [ 1000, 2976, 3067, 998, 3088, 1132,1030, 3001]  
-UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3,UAV_HOME]
+UAV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
+UAV_STEP3 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997] 
+UAV_HOME= [ 1092, 2973, 3016, 1122, 2982, 1226,1096, 2996]  
+UAV_STEPS = [UAV_STEP1,UAV_STEP2,UAV_STEP3,UAV_HOME]
 
-UGV_STEP1 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
-UGV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
 
-UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UGV_HOME = [2042, 2939, 2051, 995, 2056, 1145, 2045, 2998] 
-UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3,UGV_HOME]
+UGV_STEP1 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997]  
+UGV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
+UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
+UGV_HOME = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
+
+
+UGV_STEPS = [ UGV_STEP1,UGV_STEP2,UGV_STEP3,UGV_HOME]
 
 
 def t2r(ticks):
@@ -69,6 +71,22 @@ class MorphingControlNode(Node):
     def _joint_state_callback(self, msg: JointState):
         for name, pos in zip(msg.name, msg.position):
             self._current_joint_positions[name] = pos
+
+    def _log_position_comparison(self, target_ticks, label):
+        """Log current vs target positions for debugging."""
+        if not self._current_joint_positions:
+            self.get_logger().warn(f'  {label}: No joint positions received yet!')
+            return
+        for i, name in enumerate(JOINTS):
+            if name not in self._current_joint_positions:
+                self.get_logger().warn(f'  {label}: {name} — NO DATA')
+                continue
+            curr_rad = self._current_joint_positions[name]
+            curr_ticks = int(curr_rad / (2.0 * math.pi) * 4096)
+            target = target_ticks[i]
+            delta = abs(curr_ticks - target)
+            mark = '✗' if delta > (MATCH_THRESHOLD / (2.0 * math.pi) * 4096) else '✓'
+            self.get_logger().info(f'  {label} {name}: curr={curr_ticks} target={target} Δ={delta} {mark}')
 
     def _is_at_position(self, target_ticks):
         if not self._current_joint_positions:
@@ -119,6 +137,10 @@ class MorphingControlNode(Node):
                 self._start_sequence(UGV_STEPS)
             else:
                 self.get_logger().warn('MORPH mode set but robot is not in a known HOME position. No sequence triggered.')
+                self.get_logger().warn('--- Position comparison vs UGV_HOME ---')
+                self._log_position_comparison(UGV_HOME, 'UGV_HOME')
+                self.get_logger().warn('--- Position comparison vs UAV_HOME ---')
+                self._log_position_comparison(UAV_HOME, 'UAV_HOME')
 
     def _start_sequence(self, steps):
         self._active_sequence = steps

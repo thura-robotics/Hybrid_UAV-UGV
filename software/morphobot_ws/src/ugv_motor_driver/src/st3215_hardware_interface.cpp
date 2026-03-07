@@ -364,7 +364,12 @@ hardware_interface::return_type ST3215HardwareInterface::read(
         int servo_id = servo_ids_[i];
         size_t joint_idx = servo_to_joint_map_[servo_id];
         // Convert ticks/s to rad/s (4096 ticks = 2π radians)
-        hw_velocities_[joint_idx] = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
+        double vel = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
+        // Right-side servos (9, 12) are physically mirrored — negate feedback
+        if (servo_id == 9 || servo_id == 12) {
+          vel = -vel;
+        }
+        hw_velocities_[joint_idx] = vel;
       }
     }
   }
@@ -416,7 +421,13 @@ hardware_interface::return_type ST3215HardwareInterface::write(
       double rad_s = hw_velocity_commands_[idx];
       int velocity_value = static_cast<int>((rad_s / (2.0 * M_PI)) * 4096.0);
       
-      vel_request->servo_ids.push_back(servo_ids_[idx]);
+      // Right-side servos (9, 12) are physically mirrored — negate their velocity
+      int servo_id = servo_ids_[idx];
+      if (servo_id == 9 || servo_id == 12) {
+        velocity_value = -velocity_value;
+      }
+      
+      vel_request->servo_ids.push_back(servo_id);
       vel_request->velocities.push_back(velocity_value);
       
       // Debug logging

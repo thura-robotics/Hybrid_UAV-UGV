@@ -17,6 +17,9 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ./launch_mavros.sh
 ```
 
+cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
+./launch_all.sh
+
 ### Terminal 2: Run PX4 RC Bridge
 ```bash
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
@@ -32,11 +35,16 @@ ros2 launch ugv_motor_driver robot_control.launch.py
 
 
 # UGV control
+source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
 ros2 run control ugv_control_node
 
 # Morphing control
+source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
 ros2 run control morphing_control_node
 ```
+
+source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml
 
 
 source /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash

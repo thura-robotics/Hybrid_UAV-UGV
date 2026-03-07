@@ -8,6 +8,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from ugv_motor_driver.srv import ReadPositions, WritePositions, WriteVelocities, ReadVelocities
+from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 
 try:
     from st3215 import ST3215
@@ -114,6 +115,29 @@ class ST3215ServiceNode(Node):
         self.get_logger().info('  - /st3215/write_positions')
         self.get_logger().info('  - /st3215/write_velocities')
         self.get_logger().info('  - /st3215/read_velocities')
+        
+        # Temperature publisher (every 5 seconds)
+        self.temp_pub = self.create_publisher(Float32MultiArray, '/servo_temperatures', 10)
+        self.temp_timer = self.create_timer(5.0, self._publish_temperatures)
+        self.get_logger().info('Publishing: /servo_temperatures (every 5s)')
+    
+    def _publish_temperatures(self):
+        """Read and publish temperatures for all servos."""
+        msg = Float32MultiArray()
+        msg.layout.dim = [MultiArrayDimension(label='servo_id', size=len(self.servo_ids), stride=len(self.servo_ids))]
+        temps = []
+        for sid in self.servo_ids:
+            try:
+                temp = self.servo.ReadTemperature(sid)
+                temps.append(float(temp) if temp is not None else -1.0)
+            except Exception:
+                temps.append(-1.0)
+            time.sleep(0.005)
+        msg.data = temps
+        self.temp_pub.publish(msg)
+        # Log summary
+        temp_str = ', '.join(f'S{sid}:{t:.0f}°C' for sid, t in zip(self.servo_ids, temps))
+        self.get_logger().info(f'Temps: {temp_str}', throttle_duration_sec=10.0)
     
     def read_positions_callback(self, request, response):
         """Read positions from specified servos with per-servo retry logic."""

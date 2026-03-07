@@ -1,7 +1,7 @@
 from st3215 import ST3215
 import time
 
-s = ST3215('/dev/ttyUSB0')
+s = ST3215('/dev/ttyUSB1')
 
 #read al servo position
 for i in range(1,10):
@@ -15,18 +15,21 @@ SERVO_IDS = [1, 2, 4, 5, 7, 8,10,11]
 HOME      = [2048, 2760, 2048, 1200, 2048, 1200,2048, 2760]
 
 UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UAV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
-UAV_STEP3 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
-UAV_STEP4 = [ 1000, 2976, 3067, 998, 3088, 1132,1030, 3001]  
-UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3,UAV_STEP4]
+UAV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
+UAV_STEP3 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997] 
+UAV_HOME= [ 1092, 2973, 3016, 1122, 2982, 1226,1096, 2996]  
+UAV_STEPS = [UAV_STEP1,UAV_STEP2,UAV_STEP3,UAV_HOME]
 
-UGV_STEP1 = [ 1402, 2976, 2649, 997, 2650, 1131, 1681, 3001]  
-UGV_STEP2 = [ 1396, 2019, 2443, 2017, 2630, 2066,1671, 2052]  
 
-UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UGV_STEP4 = [2042, 2939, 2051, 995, 2056, 1145, 2045, 2998] 
-UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3,UGV_STEP4]
+UGV_STEP1 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997]  
+UGV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
+UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
+UGV_HOME = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
 
+
+UGV_STEPS = [ UGV_HOME]
+
+# UAV_STEP4, UGV_STEP1,UGV_STEP2,UGV_STEP3,
 # Threshold for matching positions (ticks)
 MATCH_THRESHOLD = 17
 
@@ -91,15 +94,15 @@ def run_sequence(name, steps):
             s.WritePosition(sid, pos)
         
         # Monitor until settled
-        for i in range(3):
-            time.sleep(0.5)
+        for i in range(4):
+            time.sleep(1.0)
             curr = get_current_positions()
             status, max_delta = get_status(curr)
-            print(f"  [{i+1}/3] Status: {status} (Max Error: {max_delta}) | Positions: {curr}")
+            print(f"  [{i+1}/4] Status: {status} (Max Error: {max_delta}) | Positions: {curr}")
     
     print(f"\nAll {name} steps complete.")
 
-# run_sequence("UGV", UGV_STEPS)
-run_sequence("UAV", UAV_STEPS)
 run_sequence("UGV", UGV_STEPS)
+# run_sequence("UAV", UAV_STEPS)
+# run_sequence("UGV", UGV_STEPS)
 

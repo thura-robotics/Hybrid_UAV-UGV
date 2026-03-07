@@ -96,16 +96,23 @@ class UGVControlNode(Node):
         # max_ticks: integer ticks mapped to max physical speed (m/s and rad/s)
         # diff_drive_controller takes linear.x (m/s) and angular.z (rad/s)
         
-        # Scaling joystick (+-1.0 limits) to theoretical limits
-        max_linear_speed = 1.0  # m/s target at full throttle
-        max_angular_speed = 3.0 # rad/s target at full steering
+        # Scaling joystick (+-1.0 limits) to velocity commands
+        # Target: 2000 ticks at full throttle
+        # Chain: linear_x -> rad/s = linear_x / wheel_radius(0.11)
+        #        rad/s -> ticks = (rad/s / 2π) * 4096
+        # For 2000 ticks: rad/s = 2000 * 2π / 4096 ≈ 3.06
+        #                 linear_x = 3.06 * 0.11 ≈ 0.34 m/s
+        max_linear_speed = 0.34  # m/s → produces ~2000 ticks on wheel servos
+        max_angular_speed = 3.0  # rad/s → produces ~2000 ticks per wheel at full steering
         
         twist = Twist()
-        twist.linear.x = throttle * max_linear_speed
+        # Invert throttle: pushing joystick forward gives a negative value, we want positive linear.x
+        twist.linear.x = -throttle * max_linear_speed
         
         # If invert_right is true, we might need to adjust the angular direction.
-        # But diff_drive_controller handles wheel inversion internally based on URDF joint definitions.
-        twist.angular.z = steering * max_angular_speed
+        # Negate steering: Joystick RIGHT is positive. In ROS, positive angular.z is turning LEFT (CCW).
+        # We need positive steering to create negative angular.z (CW, turning right).
+        twist.angular.z = -steering * max_angular_speed
         
         self.cmd_vel_pub.publish(twist)
         
