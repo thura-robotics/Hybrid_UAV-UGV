@@ -35,7 +35,7 @@ def generate_launch_description():
             " ",
             PathJoinSubstitution(
                 [
-                    FindPackageShare("ugv_motor_driver"),
+                    FindPackageShare("morphobot_urdf"),
                     "urdf",
                     "hybrid_robot.urdf.xacro",
                 ]
@@ -43,7 +43,7 @@ def generate_launch_description():
         ]
     )
     
-    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
+    robot_description = {"robot_description": robot_description_content}
 
     # Get controller configuration
     robot_controllers = PathJoinSubstitution(

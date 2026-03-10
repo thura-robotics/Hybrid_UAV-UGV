@@ -24,7 +24,7 @@ STEP_DELAY = 3.0   # seconds between sequence steps
 MATCH_THRESHOLD = 0.077   # ~50 ticks (50/4096 * 2π)
 
 # Joint Names mapped to indices in UAV/UGV arrays
-JOINTS = ['servo_joint_1', 'servo_joint_2', 'servo_joint_4', 'servo_joint_5', 'servo_joint_7', 'servo_joint_8', 'servo_joint_10', 'servo_joint_11']
+JOINTS = ['hip_FL', 'ankle_FL', 'hip_BL', 'ankle_BL', 'hip_FR', 'ankle_FR', 'hip_BR', 'ankle_BR']
 HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
 
 UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  

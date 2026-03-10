@@ -6,6 +6,7 @@ Build the workspace:
 ```bash
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 source /opt/ros/humble/setup.bash
+colcon build --packages-select control
 colcon build
 ```
 
@@ -16,6 +17,12 @@ colcon build
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ./launch_mavros.sh
 ```
+
+
+
+ros2 launch morphobot_urdf view_robot.launch.py
+
+ros2 launch morphobot_urdf gazebo_sim.launch.py
 
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ./launch_all.sh

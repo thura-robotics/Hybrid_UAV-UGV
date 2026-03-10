@@ -87,7 +87,6 @@ install(PROGRAMS
 install(DIRECTORY
   config
   launch
-  urdf
   DESTINATION share/${PROJECT_NAME}
 )
 

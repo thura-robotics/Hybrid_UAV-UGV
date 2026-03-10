@@ -1,0 +1,616 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<robot name="morphobot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="sim_mode" default="false"/>
+  <link name="base_link" /><joint name="base_joint" type="fixed"><parent link="base_link" /><child link="chassis" /><origin xyz="0 0 0" rpy="0 0 0" /></joint><link name="chassis">
+    <inertial>
+      <origin xyz="-0.0017859 8.8687E-05 0.0030325" rpy="0 0 0" />
+      <mass value="1.3009" />
+      <inertia ixx="0.0030792" ixy="6.1049E-08" ixz="-1.3499E-08" iyy="0.0068536" iyz="2.3283E-07" izz="0.008838" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/chassis.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/chassis.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="servo_bracket_FR">
+    <inertial>
+      <origin xyz="-0.042924 -4.0721E-06 -0.020009" rpy="0 0 0" />
+      <mass value="0.042405" />
+      <inertia ixx="3.2812E-05" ixy="-2.9362E-09" ixz="1.0648E-05" iyy="6.4138E-05" iyz="1.9445E-09" izz="3.3214E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_FR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_FR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="hip_FR" type="revolute">
+    <origin xyz="-0.101434631039295 0.0823210899942516 0.0304773195684974" rpy="3.14159265358979 0 0" />
+    <parent link="chassis" />
+    <child link="servo_bracket_FR" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="append_FR">
+    <inertial>
+      <origin xyz="0.074461 0.0092264 -9.2304E-05" rpy="0 0 0" />
+      <mass value="0.27522" />
+      <inertia ixx="5.7287E-05" ixy="-3.0586E-05" ixz="3.0784E-08" iyy="0.00027515" iyz="-3.5022E-09" izz="0.00026016" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_FR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_FR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="ankle_FR" type="revolute">
+    <origin xyz="-0.0840448577552637 0 0" rpy="-1.5707963267949 0 -1.57079616492685" />
+    <parent link="servo_bracket_FR" />
+    <child link="append_FR" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="wheel_FR">
+    <inertial>
+      <origin xyz="-2.8588E-15 -0.01465 -1.8152E-14" rpy="0 0 0" />
+      <mass value="0.18408" />
+      <inertia ixx="0.00089659" ixy="9.929E-19" ixz="7.5935E-16" iyy="0.0017666" iyz="8.4616E-18" izz="0.00089659" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_FR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_FR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="drive_FR" type="continuous">
+    <origin xyz="0.127442160253388 0.0254871047178672 -0.000115427389016098" rpy="0 0.899970226771414 3.14159265358979" />
+    <parent link="append_FR" />
+    <child link="wheel_FR" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="prop_FR">
+    <inertial>
+      <origin xyz="-4.282E-07 0.007285 -3.5747E-07" rpy="0 0 0" />
+      <mass value="0.011584" />
+      <inertia ixx="4.6684E-06" ixy="1.0825E-11" ixz="-3.3532E-11" iyy="9.2341E-06" iyz="1.7078E-12" izz="4.6683E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_FR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_FR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rotor_FR" type="continuous">
+    <origin xyz="0 -0.05 0" rpy="0 -0.757967691843519 3.14159265358979" />
+    <parent link="wheel_FR" />
+    <child link="prop_FR" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="servo_bracket_FL">
+    <inertial>
+      <origin xyz="-0.042924 -4.0728E-06 -0.020009" rpy="0 0 0" />
+      <mass value="0.042405" />
+      <inertia ixx="3.2812E-05" ixy="-2.9364E-09" ixz="1.0648E-05" iyy="6.4138E-05" iyz="1.9444E-09" izz="3.3214E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_FL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_FL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="hip_FL" type="revolute">
+    <origin xyz="-0.101434631039295 -0.0823210899942522 0.0304773195684969" rpy="-3.1333675045612 0 0" />
+    <parent link="chassis" />
+    <child link="servo_bracket_FL" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="append_FL">
+    <inertial>
+      <origin xyz="-0.074461 -0.0089764 -9.2298E-05" rpy="0 0 0" />
+      <mass value="0.27522" />
+      <inertia ixx="5.7287E-05" ixy="-3.0586E-05" ixz="-3.0785E-08" iyy="0.00027515" iyz="3.4909E-09" izz="0.00026016" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_FL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_FL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="ankle_FL" type="revolute">
+    <origin xyz="-0.0840448577552642 0 0" rpy="1.5707963267949 0 -1.57079616537033" />
+    <parent link="servo_bracket_FL" />
+    <child link="append_FL" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="wheel_FL">
+    <inertial>
+      <origin xyz="-1.9984E-15 -0.016481 -1.8568E-14" rpy="0 0 0" />
+      <mass value="0.18408" />
+      <inertia ixx="0.00089659" ixy="1.0385E-18" ixz="7.5768E-16" iyy="0.0017666" iyz="7.7999E-18" izz="0.00089659" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_FL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_FL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="drive_FL" type="continuous">
+    <origin xyz="-0.12744216025344 -0.0234058917733765 -0.000115427332497725" rpy="3.14159265358979 1.56205294824498 3.14159265358979" />
+    <parent link="append_FL" />
+    <child link="wheel_FL" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="prop_FL">
+    <inertial>
+      <origin xyz="4.0196E-07 0.0091162 2.2698E-07" rpy="0 0 0" />
+      <mass value="0.011584" />
+      <inertia ixx="4.6679E-06" ixy="-1.1984E-12" ixz="-3.5714E-11" iyy="9.2332E-06" iyz="-3.4861E-12" izz="4.6679E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_FL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_FL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rotor_FL" type="continuous">
+    <origin xyz="0 -0.05 0" rpy="0 0.256991852749541 -3.14159265358979" />
+    <parent link="wheel_FL" />
+    <child link="prop_FL" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="servo_bracket_BR">
+    <inertial>
+      <origin xyz="-0.042924 -4.0721E-06 -0.020009" rpy="0 0 0" />
+      <mass value="0.042405" />
+      <inertia ixx="3.2812E-05" ixy="-2.9362E-09" ixz="1.0648E-05" iyy="6.4138E-05" iyz="1.9445E-09" izz="3.3214E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_BR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_BR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="hip_BR" type="revolute">
+    <origin xyz="0.101434631039295 0.0823210899942516 0.0304773195684974" rpy="-3.14159265358979 0 3.14159265358979" />
+    <parent link="chassis" />
+    <child link="servo_bracket_BR" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="append_BR">
+    <inertial>
+      <origin xyz="-0.074461 -0.0090144 -9.2285E-05" rpy="0 0 0" />
+      <mass value="0.27522" />
+      <inertia ixx="5.7287E-05" ixy="-3.0586E-05" ixz="-3.0775E-08" iyy="0.00027515" iyz="3.4934E-09" izz="0.00026016" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_BR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_BR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="ankle_BR" type="revolute">
+    <origin xyz="-0.0840448577552636 0 0" rpy="1.5707963713624 0 -1.57079616630448" />
+    <parent link="servo_bracket_BR" />
+    <child link="append_BR" />
+    <axis xyz="0 0.999999999999999 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="wheel_BR">
+    <inertial>
+      <origin xyz="-3.33066907387547E-16 0.0153503594702697 -1.9595436384634E-14" rpy="0 0 0" />
+      <mass value="0.184080607323592" />
+      <inertia ixx="0.000896585517388218" ixy="4.02069493034564E-19" ixz="7.58257118118472E-16" iyy="0.0017665718315411" iyz="8.67939193200404E-18" izz="0.00089658551736539" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_BR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_BR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="drive_BR" type="continuous">
+    <origin xyz="-0.127442160253548 -0.0552371047230112 -0.000115424751671311" rpy="0 -1.47982271240139 0" />
+    <parent link="append_BR" />
+    <child link="wheel_BR" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="prop_BR">
+    <inertial>
+      <origin xyz="1.06331759147649E-07 0.00521171729784679 -5.22503755318038E-07" rpy="0 0 0" />
+      <mass value="0.0115842243590244" />
+      <inertia ixx="4.66797551376452E-06" ixy="-1.54937188217584E-12" ixz="2.48197141634751E-12" iyy="9.23323605990238E-06" iyz="3.59842727954327E-12" izz="4.66788844108918E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_BR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_BR.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rotor_BR" type="continuous">
+    <origin xyz="0 -0.0228606222152567 0" rpy="0 -0.2616614599998 3.14159265358979" />
+    <parent link="wheel_BR" />
+    <child link="prop_BR" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="servo_bracket_BL">
+    <inertial>
+      <origin xyz="-0.0429244474612721 -4.07280103459362E-06 -0.0200092449338251" rpy="0 0 0" />
+      <mass value="0.0424047053525931" />
+      <inertia ixx="3.2812278167878E-05" ixy="-2.93638517942673E-09" ixz="1.06477878797441E-05" iyy="6.41382538057818E-05" iyz="1.94439198116056E-09" izz="3.32144065957128E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_BL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/servo_bracket_BL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="hip_BL" type="revolute">
+    <origin xyz="0.1014346310393 -0.0823210899942516 0.0304773195684969" rpy="-3.1333675045612 0 3.14159265358979" />
+    <parent link="chassis" />
+    <child link="servo_bracket_BL" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="append_BL">
+    <inertial>
+      <origin xyz="-0.0741523700092663 -0.0087483244558446 -9.21354746105385E-05" rpy="0 0 0" />
+      <mass value="0.273625653121204" />
+      <inertia ixx="5.72313511482587E-05" ixy="-3.05857846799223E-05" ixz="-3.07777683577657E-08" iyy="0.00027504471638492" iyz="3.47767582142496E-09" izz="0.000260105497241212" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_BL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/append_BL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="ankle_BL" type="revolute">
+    <origin xyz="-0.0840448577552638 0 0" rpy="1.5707963267949 0 1.57079648821944" />
+    <parent link="servo_bracket_BL" />
+    <child link="append_BL" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="wheel_BL">
+    <inertial>
+      <origin xyz="-2.92821322744885E-15 -0.0146476109832033 -1.49880108324396E-14" rpy="0 0 0" />
+      <mass value="0.184080607323591" />
+      <inertia ixx="0.000896585517388205" ixy="8.91925693458778E-19" ixz="7.62763333397865E-16" iyy="0.00176657183154109" iyz="8.75705012518858E-18" izz="0.000896585517365392" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_BL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/wheel_BL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="drive_BL" type="continuous">
+    <origin xyz="-0.12744216025344 -0.0252391342643944 -0.000115427332497781" rpy="0 0.386946659841151 0" />
+    <parent link="append_BL" />
+    <child link="wheel_BL" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+  <link name="prop_BL">
+    <inertial>
+      <origin xyz="-3.72960129446653E-07 0.00728299709339199 2.74126777582984E-07" rpy="0 0 0" />
+      <mass value="0.0115839475383225" />
+      <inertia ixx="4.66828698275567E-06" ixy="-1.82227984890525E-13" ixz="3.57853129432066E-11" iyy="9.23403739485275E-06" iyz="-1.39160282645356E-11" izz="4.66837034300114E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_BL.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://morphobot_urdf/meshes/prop_BL.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rotor_BL" type="continuous">
+    <origin xyz="0 -0.05 0" rpy="-3.14159265358979 1.31719432919392 0" />
+    <parent link="wheel_BL" />
+    <child link="prop_BL" />
+    <axis xyz="0 1 0" />
+    <limit effort="10.0" velocity="5.0" />
+  </joint>
+<ros2_control name="ST3215HardwareSystem" type="system">
+    <hardware>
+      <xacro:if value="$(arg sim_mode)">
+        <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+      </xacro:if>
+      <xacro:unless value="$(arg sim_mode)">
+        <plugin>ugv_motor_driver/ST3215HardwareInterface</plugin>
+        <param name="serial_port">/dev/ttyUSB0</param>
+        <param name="servo_ids">1,2,3,4,5,6,7,8,9,10,11,12</param>
+      </xacro:unless>
+    </hardware>
+    <joint name="hip_FL">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="ankle_FL">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="drive_FL">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="hip_BL">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="ankle_BL">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="drive_BL">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="hip_FR">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="ankle_FR">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="drive_FR">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="hip_BR">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="ankle_BR">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="drive_BR">
+      <command_interface name="velocity">
+        <param name="min">-255</param>
+        <param name="max">255</param>
+      </command_interface>
+      <state_interface name="position" />
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+  </ros2_control>
+
+  <gazebo>
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find ugv_motor_driver)/config/controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+</robot>

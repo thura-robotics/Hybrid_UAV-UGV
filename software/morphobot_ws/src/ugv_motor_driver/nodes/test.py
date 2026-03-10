@@ -1,7 +1,7 @@
 from st3215 import ST3215
 import time
 
-s = ST3215('/dev/ttyUSB1')
+s = ST3215('/dev/ttyUSB0')
 
 #read al servo position
 for i in range(1,10):
@@ -102,7 +102,7 @@ def run_sequence(name, steps):
     
     print(f"\nAll {name} steps complete.")
 
-run_sequence("UGV", UGV_STEPS)
-# run_sequence("UAV", UAV_STEPS)
 # run_sequence("UGV", UGV_STEPS)
 
+run_sequence("UGV", UGV_STEPS)
+# run_sequence("UAV", UAV_STEPS)
