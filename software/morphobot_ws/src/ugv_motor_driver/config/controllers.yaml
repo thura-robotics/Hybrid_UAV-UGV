@@ -32,6 +32,15 @@ diff_drive_controller:
     wheel_separation: 0.23 # Approximate, tweak if necessary // 
     wheel_radius: 0.110 # Approximate, tweak if necessary // 110 mm ot -- 202 diameter // front to back  370mm
 
+    command_interfaces:
+      - velocity
+
+    state_interfaces:
+      - position
+      - velocity
+
+    publish_rate: 50
+
     use_stamped_vel: false
 
     # optional params to prevent sudden jerks

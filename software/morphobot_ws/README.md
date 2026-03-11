@@ -22,6 +22,7 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 
 ros2 launch morphobot_urdf view_robot.launch.py
 
+
 ros2 launch morphobot_urdf gazebo_sim.launch.py
 
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws

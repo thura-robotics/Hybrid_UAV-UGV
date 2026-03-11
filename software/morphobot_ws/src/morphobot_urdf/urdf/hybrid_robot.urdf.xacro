@@ -490,7 +490,7 @@
 <ros2_control name="ST3215HardwareSystem" type="system">
     <hardware>
       <xacro:if value="$(arg sim_mode)">
-        <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
       </xacro:if>
       <xacro:unless value="$(arg sim_mode)">
         <plugin>ugv_motor_driver/ST3215HardwareInterface</plugin>
@@ -609,7 +609,9 @@
   </ros2_control>
 
   <gazebo>
-    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+    <plugin
+      filename="libgz_ros2_control-system.so"
+      name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(find ugv_motor_driver)/config/controllers.yaml</parameters>
     </plugin>
   </gazebo>

@@ -7,13 +7,25 @@ from launch_ros.substitutions import FindPackageShare
 
 
 
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, AppendEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
     package_name = "morphobot_urdf"
+    pkg_share = get_package_share_directory(package_name)
+    model_path = os.path.dirname(pkg_share)  # points to install/.../share
+
+    set_env_vars = AppendEnvironmentVariable(
+        'IGN_GAZEBO_RESOURCE_PATH',
+        model_path
+    )
+
+    set_gz_env_vars = AppendEnvironmentVariable(
+        'GZ_SIM_RESOURCE_PATH',
+        model_path
+    )
 
     robot_description_content = Command([
         PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -66,6 +78,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        set_env_vars,
+        set_gz_env_vars,
         gazebo,
         robot_state_publisher,
         spawn_robot_delayed
