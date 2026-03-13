@@ -9,7 +9,7 @@ echo "Connection: /dev/ttyUSB0 "
 echo "Press Ctrl+C to stop"
 echo ""
 
-ros2 launch mavros px4.launch fcu_url:=/dev/ttyUSB0:57600
+ros2 launch mavros px4.launch fcu_url:=/dev/ttyACM0:921600
 
 # Alternative connection options (uncomment as needed):
 # fcu_url:=/dev/ttyUSB0:57600

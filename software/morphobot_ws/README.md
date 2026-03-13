@@ -153,3 +153,8 @@ ros2 launch ugv_motor_driver robot_control.launch.py
 When testing arming, keep this running:
 
 ros2 topic echo /mavros/statustext
+
+
+cd ~/ros2_ws
+rm -rf build install log
+colcon build

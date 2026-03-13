@@ -37,12 +37,12 @@ def generate_launch_description():
     declared_arguments = [
         DeclareLaunchArgument(
             "fcu_url",
-            default_value="/dev/ttyACM0:921600",
+            default_value="/dev/ttyUSB0:57600",
             description="FCU connection URL for MAVROS",
         ),
         DeclareLaunchArgument(
             "serial_port",
-            default_value="/dev/ttyUSB0",
+            default_value="/dev/ttyUSB1",
             description="Serial port for ST3215 servos",
         ),
     ]
