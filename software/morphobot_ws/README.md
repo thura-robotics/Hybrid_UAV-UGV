@@ -148,3 +148,8 @@ ros2 topic pub --once /position_controller/commands std_msgs/msg/Float64MultiArr
 2700	+1.00 rad
 
 ros2 launch ugv_motor_driver robot_control.launch.py
+
+
+When testing arming, keep this running:
+
+ros2 topic echo /mavros/statustext

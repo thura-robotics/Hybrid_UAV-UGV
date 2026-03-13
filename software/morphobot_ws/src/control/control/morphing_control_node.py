@@ -20,27 +20,25 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 
-STEP_DELAY = 3.0   # seconds between sequence steps
-MATCH_THRESHOLD = 0.077   # ~50 ticks (50/4096 * 2π)
+STEP_DELAY = 3.0            # seconds between sequence steps
+MATCH_THRESHOLD = 0.077     # ~50 ticks (50/4096 * 2π)
+HOLD_PUBLISH_RATE = 0.5     # seconds — re-publish interval to keep servos from going limp
 
 # Joint Names mapped to indices in UAV/UGV arrays
 JOINTS = ['hip_FL', 'ankle_FL', 'hip_BL', 'ankle_BL', 'hip_FR', 'ankle_FR', 'hip_BR', 'ankle_BR']
-HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
+HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865]
 
-UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
-UAV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
-UAV_STEP3 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997] 
-UAV_HOME= [ 1092, 2973, 3016, 1122, 2982, 1226,1096, 2996]  
-UAV_STEPS = [UAV_STEP1,UAV_STEP2,UAV_STEP3,UAV_HOME]
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048]
+UAV_STEP2 = [1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]
+UAV_STEP3 = [1684, 2971, 2378,  997, 2347, 1210, 1740, 2997]
+UAV_HOME  = [1092, 2973, 3016, 1122, 2982, 1226, 1096, 2996]
+UAV_STEPS = [UAV_STEP1, UAV_STEP2, UAV_STEP3, UAV_HOME]
 
-
-UGV_STEP1 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997]  
-UGV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
-UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
-UGV_HOME = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865] 
-
-
-UGV_STEPS = [ UGV_STEP1,UGV_STEP2,UGV_STEP3,UGV_HOME]
+UGV_STEP1 = [1684, 2971, 2378,  997, 2347, 1210, 1740, 2997]
+UGV_STEP2 = [1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]
+UGV_STEP3 = [2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048]
+UGV_HOME  = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865]
+UGV_STEPS = [UGV_STEP1, UGV_STEP2, UGV_STEP3, UGV_HOME]
 
 
 def t2r(ticks):
@@ -52,25 +50,49 @@ class MorphingControlNode(Node):
     def __init__(self):
         super().__init__('morphing_control_node')
         self.current_mode = -1
-        
+
         self._current_joint_positions = {}
         self._active_sequence = []
         self._seq_step = 0
         self._timer = None
 
+        # Track last commanded position so the hold timer can re-publish it.
+        # This keeps servos stiff (in position-hold mode) when no sequence is running.
+        self._last_published_positions = None
+
         self.create_subscription(
             Float32MultiArray, '/robot/mode', self.mode_callback, 10)
         self.create_subscription(
             JointState, '/joint_states', self._joint_state_callback, 10)
-            
+
         self.pub = self.create_publisher(
             Float64MultiArray, '/position_controller/commands', 10)
 
+        # Periodic hold publisher — keeps servos from going limp between commands
+        self._hold_timer = self.create_timer(HOLD_PUBLISH_RATE, self._hold_position_callback)
+
         self.get_logger().info('Morphing Control Node ready (State-Aware)')
+
+    # ------------------------------------------------------------------ #
 
     def _joint_state_callback(self, msg: JointState):
         for name, pos in zip(msg.name, msg.position):
             self._current_joint_positions[name] = pos
+
+    # ------------------------------------------------------------------ #
+
+    def _hold_position_callback(self):
+        """
+        Re-publish the last commanded position at a fixed rate.
+        This prevents Dynamixel servos from releasing torque when they stop
+        receiving commands (e.g. once a morphing sequence completes in UAV mode).
+        """
+        if self._last_published_positions is not None:
+            msg = Float64MultiArray()
+            msg.data = [t2r(t) for t in self._last_published_positions]
+            self.pub.publish(msg)
+
+    # ------------------------------------------------------------------ #
 
     def _log_position_comparison(self, target_ticks, label):
         """Log current vs target positions for debugging."""
@@ -86,12 +108,14 @@ class MorphingControlNode(Node):
             target = target_ticks[i]
             delta = abs(curr_ticks - target)
             mark = '✗' if delta > (MATCH_THRESHOLD / (2.0 * math.pi) * 4096) else '✓'
-            self.get_logger().info(f'  {label} {name}: curr={curr_ticks} target={target} Δ={delta} {mark}')
+            self.get_logger().info(
+                f'  {label} {name}: curr={curr_ticks} target={target} Δ={delta} {mark}')
+
+    # ------------------------------------------------------------------ #
 
     def _is_at_position(self, target_ticks):
         if not self._current_joint_positions:
             return False
-            
         for i, name in enumerate(JOINTS):
             if name not in self._current_joint_positions:
                 return False
@@ -101,16 +125,24 @@ class MorphingControlNode(Node):
                 return False
         return True
 
+    # ------------------------------------------------------------------ #
+
     def _publish(self, positions):
+        """Publish a position command and remember it for the hold timer."""
+        self._last_published_positions = positions   # keep for hold-timer re-publish
         msg = Float64MultiArray()
         msg.data = [t2r(t) for t in positions]
         self.pub.publish(msg)
         self.get_logger().info(f'Cmd: {positions}')
 
+    # ------------------------------------------------------------------ #
+
     def _cancel_timer(self):
         if self._timer:
             self._timer.cancel()
             self._timer = None
+
+    # ------------------------------------------------------------------ #
 
     def mode_callback(self, msg: Float32MultiArray):
         if not msg.data:
@@ -118,17 +150,17 @@ class MorphingControlNode(Node):
         new_mode = int(msg.data[0])
         if new_mode == self.current_mode:
             return
-            
+
         old_mode = self.current_mode
         self.current_mode = new_mode
         self._cancel_timer()
 
         names = {0: 'UAV', 1: 'MORPH', 2: 'UGV'}
-        self.get_logger().info(f'Mode Changed: {names.get(old_mode, "INIT")} → {names.get(new_mode, str(new_mode))}')
+        self.get_logger().info(
+            f'Mode Changed: {names.get(old_mode, "INIT")} → {names.get(new_mode, str(new_mode))}')
 
-        # Handle Transitions to MORPH
-        if new_mode == 1: # MORPH
-            # Check if we were at UGV_HOME or UAV_HOME to decide which way to morph
+        # Handle transitions to MORPH
+        if new_mode == 1:  # MORPH
             if self._is_at_position(UGV_HOME):
                 self.get_logger().info('Detected UGV_HOME state. Triggering UAV sequence...')
                 self._start_sequence(UAV_STEPS)
@@ -136,33 +168,43 @@ class MorphingControlNode(Node):
                 self.get_logger().info('Detected UAV_HOME state. Triggering UGV sequence...')
                 self._start_sequence(UGV_STEPS)
             else:
-                self.get_logger().warn('MORPH mode set but robot is not in a known HOME position. No sequence triggered.')
+                self.get_logger().warn(
+                    'MORPH mode set but robot is not in a known HOME position. No sequence triggered.')
                 self.get_logger().warn('--- Position comparison vs UGV_HOME ---')
                 self._log_position_comparison(UGV_HOME, 'UGV_HOME')
                 self.get_logger().warn('--- Position comparison vs UAV_HOME ---')
                 self._log_position_comparison(UAV_HOME, 'UAV_HOME')
+
+    # ------------------------------------------------------------------ #
 
     def _start_sequence(self, steps):
         self._active_sequence = steps
         self._seq_step = 0
         self._next_step()
 
+    # ------------------------------------------------------------------ #
+
     def _next_step(self):
         self._cancel_timer()
         if self._seq_step >= len(self._active_sequence):
             self.get_logger().info('Sequence complete ✓')
+            # _hold_timer will now keep re-publishing _last_published_positions
+            # so servos remain stiff at the final position.
             return
-            
+
         step = self._active_sequence[self._seq_step]
         self.get_logger().info(f'Step {self._seq_step + 1}/{len(self._active_sequence)}: {step}')
         self._publish(step)
-        
+
         self._seq_step += 1
         if self._seq_step < len(self._active_sequence):
             self._timer = self.create_timer(STEP_DELAY, self._next_step)
         else:
             self.get_logger().info('Sequence complete ✓')
+            # _hold_timer will now keep re-publishing _last_published_positions
 
+
+# ---------------------------------------------------------------------- #
 
 def main(args=None):
     rclpy.init(args=args)
