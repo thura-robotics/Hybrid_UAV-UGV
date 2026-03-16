@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Morphing Control Node
+
+Listens to robot mode, Checks current joint positions, Runs a morphing sequence, Publishes servo positions, Keeps holding the final position
+
+
+Subscribe: robot mode --- Float64MultiArray
+Subscribe: joint states --- JointState
+Publish : /position_controller/commands --- Float64MultiArray
 
 Joint order for /position_controller/commands: S1, S2, S4, S5, S7, S8
                                     index:      0   1   2   3   4   5
 
-HOME:  S1=2048 S2=2760 S4=2048 S5=1200 S7=2048 S8=1200
-
-UAV sequence (after going home):
-  Step 1 → S2=2048, S5=2048, S8=2048
-  Step 2 → S1=900,  S4=2900, S7=2900
-  Step 3 → S2=2900, S5=1000, S8=1000
-
-MORPH / UGV / default: go to HOME
 """
 import math
 import rclpy
@@ -107,7 +105,7 @@ class MorphingControlNode(Node):
             curr_ticks = int(curr_rad / (2.0 * math.pi) * 4096)
             target = target_ticks[i]
             delta = abs(curr_ticks - target)
-            mark = '✗' if delta > (MATCH_THRESHOLD / (2.0 * math.pi) * 4096) else '✓'
+            mark = 'x' if delta > (MATCH_THRESHOLD / (2.0 * math.pi) * 4096) else '--'
             self.get_logger().info(
                 f'  {label} {name}: curr={curr_ticks} target={target} Δ={delta} {mark}')
 
@@ -187,7 +185,7 @@ class MorphingControlNode(Node):
     def _next_step(self):
         self._cancel_timer()
         if self._seq_step >= len(self._active_sequence):
-            self.get_logger().info('Sequence complete ✓')
+            self.get_logger().info('Sequence complete ')
             # _hold_timer will now keep re-publishing _last_published_positions
             # so servos remain stiff at the final position.
             return
@@ -200,7 +198,7 @@ class MorphingControlNode(Node):
         if self._seq_step < len(self._active_sequence):
             self._timer = self.create_timer(STEP_DELAY, self._next_step)
         else:
-            self.get_logger().info('Sequence complete ✓')
+            self.get_logger().info('Sequence complete ')
             # _hold_timer will now keep re-publishing _last_published_positions
 
 

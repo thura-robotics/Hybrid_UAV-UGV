@@ -1,7 +1,7 @@
 from st3215 import ST3215
 import time
 
-s = ST3215('/dev/ttyUSB1')
+s = ST3215('/dev/ttyUSB0')
 
 #read al servo position
 for i in range(1,10):
@@ -19,7 +19,7 @@ UAV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]
 UAV_STEP3 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997] 
 UAV_HOME= [ 1092, 2973, 3016, 1122, 2982, 1226,1096, 2996]  
 UAV_STEPS = [UAV_STEP1,UAV_STEP2,UAV_STEP3,UAV_HOME]
-
+# ,UAV_STEP2,UAV_STEP3,UAV_HOME
 
 UGV_STEP1 = [ 1684, 2971, 2378, 997, 2347, 1210, 1740, 2997]  
 UGV_STEP2 = [ 1684, 2032, 2378, 2134, 2347, 2174, 1740, 2062]  
@@ -104,5 +104,6 @@ def run_sequence(name, steps):
 
 # run_sequence("UGV", UGV_STEPS)
 
-run_sequence("UGV", UGV_STEPS)
+
 # run_sequence("UAV", UAV_STEPS)
+run_sequence("UGV", UGV_STEPS)

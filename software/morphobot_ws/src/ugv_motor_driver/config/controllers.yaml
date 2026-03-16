@@ -39,7 +39,7 @@ diff_drive_controller:
       - position
       - velocity
 
-    publish_rate: 50
+    publish_rate: 50.0
 
     use_stamped_vel: false
 

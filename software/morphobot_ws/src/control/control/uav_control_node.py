@@ -1,5 +1,23 @@
 #!/usr/bin/env python3
 
+"""
+
+Subscribe: 
+/robot/mode --- std_msgs/Float32MultiArray
+/robot/flight_mode --- std_msgs/Float32MultiArray
+/robot/arm_command --- std_msgs/Float32MultiArray
+/mavros/state --- mavros_msgs/State
+/mavros/statustext/recv --- mavros_msgs/StatusText
+/uav/rc_commands --- std_msgs/Float32MultiArray --- [roll, pitch, throttle, yaw]
+
+Services:
+/mavros/cmd/arming
+/mavros/set_mode
+
+
+"""
+
+
 import rclpy
 from rclpy.node import Node
 
@@ -129,10 +147,23 @@ class UAVControlNode(Node):
 
             self.flight_mode = new_mode
 
-            if self.robot_mode == 0 and self.flight_mode == 1:
-                self.set_position_mode()
+            if self.robot_mode == 0:
+                if self.flight_mode == 1:
+                    self.set_position_mode()
+                elif self.flight_mode == 0:
+                    self.set_manual_mode()
 
     # ------------------------------------------------
+    def set_manual_mode(self):
+
+        if not self.mode_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("PX4 set_mode service not available")
+            return
+
+        req = SetMode.Request()
+        req.custom_mode = "MANUAL"
+
+        future = self.mode_client.call_async(req)
 
     def arm_callback(self, msg):
 
