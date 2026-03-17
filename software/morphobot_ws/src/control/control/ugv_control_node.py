@@ -12,7 +12,7 @@ Publishes to:
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Bool
 from geometry_msgs.msg import Twist
 
 
@@ -33,7 +33,7 @@ class UGVControlNode(Node):
         
         # State
         self.ugv_active = False  # Only active when mode == 2 (UGV)
-        
+        self.estop_active = False
         # Subscribe to mode from px4_rc_bridge  (/robot/mode → [0=UAV, 1=MORPH, 2=UGV])
         self.mode_sub = self.create_subscription(
             Float32MultiArray,
@@ -49,6 +49,16 @@ class UGVControlNode(Node):
             self.motor_cmd_callback,
             10
         )
+
+        # Subscribe to estop from px4_rc_bridge
+        self.estop_sub = self.create_subscription(
+            Bool,
+            '/robot/emergency_stop',
+            self.estop_callback,
+            10
+        )
+
+
         
         # Publisher to diff_drive_controller
         self.cmd_vel_pub = self.create_publisher(
@@ -80,7 +90,7 @@ class UGVControlNode(Node):
         Convert RC [throttle, steering] into geometry_msgs/Twist for diff_drive_controller.
         Only processes commands when in UGV mode.
         """
-        if not self.ugv_active or len(msg.data) < 2:
+        if not self.ugv_active or len(msg.data) < 2 or self.estop_active:
             return
         
         throttle = float(msg.data[0])
@@ -103,15 +113,12 @@ class UGVControlNode(Node):
         # For 2000 ticks: rad/s = 2000 * 2π / 4096 ≈ 3.06
         #                 linear_x = 3.06 * 0.11 ≈ 0.34 m/s
         max_linear_speed = 0.34  # m/s → produces ~2000 ticks on wheel servos
-        max_angular_speed = 3.0  # rad/s → produces ~2000 ticks per wheel at full steering
+        max_angular_speed = 3  # rad/s → produces ~2000 ticks per wheel at full steering
         
         twist = Twist()
-        # Invert throttle: pushing joystick forward gives a negative value, we want positive linear.x
+        # User reported forward/backward and turning are both inverted.
         twist.linear.x = -throttle * max_linear_speed
         
-        # If invert_right is true, we might need to adjust the angular direction.
-        # Negate steering: Joystick RIGHT is positive. In ROS, positive angular.z is turning LEFT (CCW).
-        # We need positive steering to create negative angular.z (CW, turning right).
         twist.angular.z = -steering * max_angular_speed
         
         self.cmd_vel_pub.publish(twist)
@@ -120,6 +127,20 @@ class UGVControlNode(Node):
             f'T:{throttle:.2f} S:{steering:.2f} → Vx:{twist.linear.x:.2f} Wz:{twist.angular.z:.2f}',
             throttle_duration_sec=1.0
         )
+
+
+    
+    def estop_callback(self, msg: Bool):
+        """Handle emergency stop signals from the safety monitor."""
+        if msg.data and not self.estop_active:
+            self.get_logger().error('Emergency Stop triggered in UGV control! Stopping motors.')
+            self.estop_active = True
+            self.stop_wheels()
+        elif not msg.data and self.estop_active:
+            self.get_logger().info('Emergency Stop cleared. Motors re-enabled.')
+            self.estop_active = False
+
+
     
     def stop_wheels(self):
         """Stop diff_drive_controller."""

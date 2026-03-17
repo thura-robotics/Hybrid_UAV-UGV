@@ -37,6 +37,11 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ### Terminal 3: Run Your Control Nodes
 ```bash
 
+
+
+source install/setup.bash && ros2 launch morphobot_urdf view_robot.launch.py
+
+
 # Msource /opt/ros/humble/setup.bash
 source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
 ros2 launch ugv_motor_driver robot_control.launch.py
@@ -50,6 +55,8 @@ ros2 run control ugv_control_node
 source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
 ros2 run control morphing_control_node
 ```
+
+/home/eisan/Hybrid_UAV-UGV/software/morphobot_ws/src/ugv_motor_driver/nodes/read.py
 
 source ~/Hybrid_UAV-UGV/software/morphobot_ws/install/setup.bash
 ros2 launch foxglove_bridge foxglove_bridge_launch.xml
@@ -158,3 +165,11 @@ ros2 topic echo /mavros/statustext
 cd ~/ros2_ws
 rm -rf build install log
 colcon build
+
+
+
+
+
+MPC_LAND_ALT1 = 1.0
+MPC_LAND_ALT2 = 0.35
+MPC_LAND_SPEED = 0.4

@@ -42,6 +42,9 @@ diff_drive_controller:
     publish_rate: 50.0
 
     use_stamped_vel: false
+    enable_odom_tf: true
+    base_frame_id: base_link
+    odom_frame_id: odom
 
     # optional params to prevent sudden jerks
     linear.x.has_acceleration_limits: true

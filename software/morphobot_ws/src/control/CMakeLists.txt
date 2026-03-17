@@ -29,7 +29,7 @@ install(PROGRAMS
   control/uav_control_node.py
   control/morphing_control_node.py
   control/px4_rc_bridge.py
-  control/system_monitor.py
+  control/safety_monitor_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

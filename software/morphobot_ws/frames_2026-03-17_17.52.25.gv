@@ -1,0 +1,23 @@
+digraph G {
+"map" -> "map_ned"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"odom" -> "odom_ned"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"base_link" -> "base_link_frd"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"odom" -> "base_link"[label=" Broadcaster: default_authority\nAverage rate: 2.005\nBuffer length: 3.492\nMost recent transform: 1773744745.296958\nOldest transform: 1773744741.804858\n"];
+"servo_bracket_BL" -> "append_BL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"chassis" -> "servo_bracket_BL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"servo_bracket_BR" -> "append_BR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"chassis" -> "servo_bracket_BR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"servo_bracket_FL" -> "append_FL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"chassis" -> "servo_bracket_FL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"servo_bracket_FR" -> "append_FR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"chassis" -> "servo_bracket_FR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"append_BL" -> "wheel_BL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"append_BR" -> "wheel_BR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"append_FL" -> "wheel_FL"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"append_FR" -> "wheel_FR"[label=" Broadcaster: default_authority\nAverage rate: 1.969\nBuffer length: 4.571\nMost recent transform: 1773744745.296958\nOldest transform: 1773744740.725553\n"];
+"base_link" -> "chassis"[label=" Broadcaster: default_authority\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1773744745.6116438"[ shape=plaintext ] ;
+}->"odom";
+}

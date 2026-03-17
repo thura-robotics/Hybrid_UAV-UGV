@@ -80,6 +80,17 @@ def generate_launch_description():
     )
 
     # ══════════════════════════════════════════════════════════════════
+    # 2.5 ST3215 Service Node (Must start before ROS2 Control)
+    # ══════════════════════════════════════════════════════════════════
+    st3215_service_node = Node(
+        package="ugv_motor_driver",
+        executable="st3215_service_node.py",
+        name="st3215_service_node",
+        output="both",
+        parameters=[{"serial_port": serial_port}]
+    )
+
+    # ══════════════════════════════════════════════════════════════════
     # 3. ROS2 Control (include the existing robot_control launch)
     # ══════════════════════════════════════════════════════════════════
     ros2_control_launch = IncludeLaunchDescription(
@@ -91,6 +102,12 @@ def generate_launch_description():
             ])
         ]),
         launch_arguments={"serial_port": serial_port}.items(),
+    )
+    
+    # Delay ROS2 Control slightly to ensure ST3215 Service Node is ready
+    delay_ros2_control = TimerAction(
+        period=3.0,
+        actions=[ros2_control_launch],
     )
 
     # ══════════════════════════════════════════════════════════════════
@@ -124,17 +141,57 @@ def generate_launch_description():
     )
 
     # ══════════════════════════════════════════════════════════════════
+    # 6. Safety Monitor Node
+    # ══════════════════════════════════════════════════════════════════
+    safety_monitor_node = Node(
+        package="control",
+        executable="safety_monitor_node.py",
+        name="safety_monitor_node",
+        output="both",
+    )
+
+    # ══════════════════════════════════════════════════════════════════
+    # 7. RViz (Digital Twin Visualization)
+    # ══════════════════════════════════════════════════════════════════
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare("morphobot_urdf"), "config", "morphobot.rviz"]
+    )
+
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+    )
+
+    # Delay RViz slightly to allow the robot_state_publisher from ros2_control to initialize
+    delay_rviz = TimerAction(
+        period=5.0,
+        actions=[rviz_node],
+    )
+
+    # ══════════════════════════════════════════════════════════════════
 
     return LaunchDescription(
         declared_arguments
         + [
-            # MAVROS + ROS2 Control start immediately
+            # MAVROS starts immediately
             mavros_launch,
-            ros2_control_launch,
+            # ST3215 Service Node starts immediately
+            st3215_service_node,
+            # Safety Monitor starts immediately
+            safety_monitor_node,
+            # Delay ROS2 Control for ST3215 service node to start
+            delay_ros2_control,
             # PX4 RC Bridge after MAVROS has time to start
             delay_rc_bridge,
             # Control nodes after controllers are active
             delay_ugv_control,
             delay_morphing_control,
+            # RViz visualization
+            delay_rviz,
         ]
     )
+
+

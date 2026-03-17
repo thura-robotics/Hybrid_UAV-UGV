@@ -36,6 +36,9 @@ class UAVControlNode(Node):
         self.flight_mode = 0
         self.arm_command = 0
 
+        # emergency stop flag
+        self.estop_active = False
+
         # PX4 state
         self.fc_connected = False
         self.fc_armed = False
@@ -93,10 +96,30 @@ class UAVControlNode(Node):
             self.rc_cmd_callback,
             10
         )
+        # self.create_subscription(
+        #     Float32MultiArray,
+        #     '/robot/emergency_stop',
+        #     self.estop_callback,
+        #     10
+        # )
+        
+        self.status_pub = self.create_publisher(Float32MultiArray, '/uav/status', 10)
+        self.create_timer(0.1, self.publish_status)
 
         self.get_logger().info("UAV Control Node Started")
 
-    # ------------------------------------------------
+
+
+    def publish_status(self):
+            msg = Float32MultiArray()
+            msg.data = [
+                float(self.fc_armed),
+                float(self.fc_connected),
+                float(self.flight_mode),
+                float(self.robot_mode)
+            ]
+            self.status_pub.publish(msg)
+    # -------------Robot mode 
 
     def mode_callback(self, msg):
 
@@ -118,7 +141,7 @@ class UAVControlNode(Node):
             self.arm_command = 0
             self.disarm_px4()
 
-    # ------------------------------------------------
+    # ----------PX4 status text
     def status_text_callback(self, msg):
 
         # Print PX4 warning messages
@@ -128,7 +151,7 @@ class UAVControlNode(Node):
             self.get_logger().info(f"PX4: {msg.text}")
 
 
-
+ #flight mode
     
     def flight_mode_callback(self, msg):
 
@@ -153,7 +176,7 @@ class UAVControlNode(Node):
                 elif self.flight_mode == 0:
                     self.set_manual_mode()
 
-    # ------------------------------------------------
+    # ---------mode switch--------------------
     def set_manual_mode(self):
 
         if not self.mode_client.wait_for_service(timeout_sec=2.0):
@@ -185,6 +208,11 @@ class UAVControlNode(Node):
             if self.robot_mode == 0:
 
                 if self.arm_command == 1:
+                    # if self.estop_active:
+                    #     self.get_logger().warn(
+                    #         "Cannot arm: Emergency stop active")
+                    #     return
+
                     self.arm_px4()
                 else:
                     self.disarm_px4()
@@ -206,14 +234,32 @@ class UAVControlNode(Node):
     # ------------------------------------------------
 
     def disarm_px4(self):
-
+        if not self.arm_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("Arm service unavailable — cannot disarm!")
+            return
         req = CommandBool.Request()
         req.value = False
 
         future = self.arm_client.call_async(req)
         future.add_done_callback(self.arm_response)
 
-    # ------------------------------------------------
+    
+    # Emergency Stop
+    
+    # def estop_callback(self, msg):
+
+    #     if not msg.data:
+    #         return
+
+    #     estop = int(msg.data[0])
+
+    #     if estop == 1:
+
+    #         self.get_logger().error("EMERGENCY STOP TRIGGERED")
+
+    #         self.estop_active = True
+
+    #         self.disarm_px4()
 
     def set_position_mode(self):
 
@@ -257,15 +303,16 @@ class UAVControlNode(Node):
         except Exception as e:
             self.get_logger().error(str(e))
 
-    # ------------------------------------------------
+    # ------PX4 state----------------
 
     def state_callback(self, msg):
-
+        # if self.fc_armed and not msg.armed:
+        #     self.get_logger().warn("PX4 DISARMED")
         self.fc_connected = msg.connected
         self.fc_armed = msg.armed
         self.fc_mode = msg.mode
 
-    # ------------------------------------------------
+    # --------RC commands monitor------------------
 
     def rc_cmd_callback(self, msg):
 
