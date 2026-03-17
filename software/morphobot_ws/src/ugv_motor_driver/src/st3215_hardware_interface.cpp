@@ -366,7 +366,7 @@ hardware_interface::return_type ST3215HardwareInterface::read(
         // Convert ticks/s to rad/s (4096 ticks = 2π radians)
         double vel = (static_cast<double>(response->velocities[i]) / 4096.0) * 2.0 * M_PI;
         // Right-side servos (9, 12) are physically mirrored — negate feedback
-        if (servo_id == 9 || servo_id == 12) {
+        if (servo_id == 3 || servo_id == 6) {
           vel = -vel;
         }
         hw_velocities_[joint_idx] = vel;

@@ -113,7 +113,7 @@ class UGVControlNode(Node):
         # For 2000 ticks: rad/s = 2000 * 2π / 4096 ≈ 3.06
         #                 linear_x = 3.06 * 0.11 ≈ 0.34 m/s
         max_linear_speed = 0.34  # m/s → produces ~2000 ticks on wheel servos
-        max_angular_speed = 3  # rad/s → produces ~2000 ticks per wheel at full steering
+        max_angular_speed = 1 # rad/s → produces ~2000 ticks per wheel at full steering
         
         twist = Twist()
         # User reported forward/backward and turning are both inverted.
