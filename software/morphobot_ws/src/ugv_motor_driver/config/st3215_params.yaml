@@ -1,6 +1,6 @@
 st3215_service_node:
   ros__parameters:
-    serial_port: "/dev/ttyUSB0"
+    serial_port: "/dev/ttyUSB1" # NOTE: overridden by launch_all.sh!
     # servo_ids: [10,12]
     # position_servo_ids: [10]
     # velocity_servo_ids: [12]

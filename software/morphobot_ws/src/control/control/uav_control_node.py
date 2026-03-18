@@ -204,18 +204,33 @@ class UAVControlNode(Node):
             )
 
             self.arm_command = new_arm
+            if self.robot_mode != 0:
+                return
 
-            if self.robot_mode == 0:
+            if self.arm_command == 0:
+                self.disarm_px4()
+                return
 
-                if self.arm_command == 1:
-                    # if self.estop_active:
-                    #     self.get_logger().warn(
-                    #         "Cannot arm: Emergency stop active")
-                    #     return
+            if self.arm_command == 1:
+                if not self.fc_connected:
+                    self.get_logger().warn("Cannot arm: FCU not connected")
+                    return
 
-                    self.arm_px4()
-                else:
-                    self.disarm_px4()
+                # 2. Ensure correct mode first
+                if self.fc_mode != "MANUAL":
+                    self.get_logger().warn(f"Not in MANUAL mode (current: {self.fc_mode})")
+                    self.set_manual_mode()
+                    return
+
+                # 3. Avoid duplicate arm
+                if self.fc_armed:
+                    self.get_logger().info("Already armed")
+                    return
+
+                # 4. Try arming
+                self.get_logger().info("Sending ARM command")
+                self.arm_px4()
+
 
     # ------------------------------------------------
 

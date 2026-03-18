@@ -84,14 +84,12 @@ class Px4RcBridge(Node):
     # ── Helpers ───────────────────────────────────────────────────────
 
     def normalize_pwm(self, pwm_value):
+        """Normalize PWM value from [pwm_min, pwm_max] to [-1.0, 1.0]"""
         pwm_value = max(self.pwm_min, min(self.pwm_max, pwm_value))
-
         if pwm_value >= self.pwm_center:
-            value = (pwm_value - self.pwm_center) / (self.pwm_max - self.pwm_center)
+            return (pwm_value - self.pwm_center) / (self.pwm_max - self.pwm_center)
         else:
-            value = (pwm_value - self.pwm_center) / (self.pwm_center - self.pwm_min)
-
-        return value   # invert axis
+            return (pwm_value - self.pwm_center) / (self.pwm_center - self.pwm_min)
 
     def detect_mode(self, channels):
         """Detect robot mode from CH5.  Returns: 0=UAV, 1=MORPH, 2=UGV"""

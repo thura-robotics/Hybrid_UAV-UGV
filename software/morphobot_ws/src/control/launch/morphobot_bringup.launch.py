@@ -42,7 +42,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "serial_port",
-            default_value="/dev/ttyUSB0",
+            default_value="/dev/ttyUSB1",
             description="Serial port for ST3215 servos",
         ),
     ]
@@ -153,23 +153,23 @@ def generate_launch_description():
     # ══════════════════════════════════════════════════════════════════
     # 7. RViz (Digital Twin Visualization)
     # ══════════════════════════════════════════════════════════════════
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("morphobot_urdf"), "config", "morphobot.rviz"]
-    )
+    # rviz_config_file = PathJoinSubstitution(
+    #     [FindPackageShare("morphobot_urdf"), "config", "morphobot.rviz"]
+    # )
 
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-    )
+    # rviz_node = Node(
+    #     package="rviz2",
+    #     executable="rviz2",
+    #     name="rviz2",
+    #     output="log",
+    #     arguments=["-d", rviz_config_file],
+    # )
 
-    # Delay RViz slightly to allow the robot_state_publisher from ros2_control to initialize
-    delay_rviz = TimerAction(
-        period=5.0,
-        actions=[rviz_node],
-    )
+    # # Delay RViz slightly to allow the robot_state_publisher from ros2_control to initialize
+    # delay_rviz = TimerAction(
+    #     period=5.0,
+    #     actions=[rviz_node],
+    # )
 
     # ══════════════════════════════════════════════════════════════════
 
@@ -188,9 +188,9 @@ def generate_launch_description():
             delay_rc_bridge,
             # Control nodes after controllers are active
             delay_ugv_control,
-            delay_morphing_control,
+            delay_morphing_control
             # RViz visualization
-            delay_rviz,
+            # delay_rviz,
         ]
     )
 

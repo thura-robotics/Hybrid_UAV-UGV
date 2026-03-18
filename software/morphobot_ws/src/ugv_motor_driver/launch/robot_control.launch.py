@@ -69,7 +69,7 @@ def generate_launch_description():
         executable="st3215_service_node.py",
         name="st3215_service_node",
         output="both",
-        parameters=[st3215_params],
+        parameters=[st3215_params, {"serial_port": serial_port}],
     )
 
     # Controller manager node (starts after service node)

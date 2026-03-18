@@ -116,7 +116,7 @@ class UGVControlNode(Node):
         max_angular_speed = 1 # rad/s → produces ~2000 ticks per wheel at full steering
         
         twist = Twist()
-        # User reported forward/backward and turning are both inverted.
+       
         twist.linear.x = -throttle * max_linear_speed
         
         twist.angular.z = -steering * max_angular_speed
