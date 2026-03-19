@@ -26,16 +26,14 @@ HOLD_PUBLISH_RATE = 0.5     # seconds — re-publish interval to keep servos fro
 JOINTS = ['hip_FL', 'ankle_FL', 'hip_BL', 'ankle_BL', 'hip_FR', 'ankle_FR', 'hip_BR', 'ankle_BR']
 HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865]
 
-UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048]
-# UAV_HOME= [ 1046, 3050, 3050, 1046, 3050, 1046,1046, 3050] 
+
+UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048,2048, 2048]  
 UAV_HOME= [ 990, 3050, 3080, 990, 3050, 1046,990, 3050]  
 UAV_STEPS = [UAV_STEP1,UAV_HOME]
 
-UGV_STEP1 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
-UGV_HOME = [2048, 3050, 2048, 1046, 2048, 1046, 2048, 3050] 
-
-UGV_STEPS = [UGV_STEP1,UGV_HOME]
-
+UGV_STEP3 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
+UGV_HOME = [2048, 3050, 2048, 1046, 2048, 990, 2048, 3050] 
+UGV_STEPS = [UGV_STEP3,UGV_HOME]
 
 def t2r(ticks):
     return ticks / 4096.0 * 2.0 * math.pi
@@ -51,6 +49,7 @@ class MorphingControlNode(Node):
         self._active_sequence = []
         self._seq_step = 0
         self._timer = None
+        self.is_morphing = False
 
         # Track last commanded position so the hold timer can re-publish it.
         # This keeps servos stiff (in position-hold mode) when no sequence is running.
@@ -147,6 +146,10 @@ class MorphingControlNode(Node):
         if new_mode == self.current_mode:
             return
 
+        if self.is_morphing:
+            self.get_logger().warn('Morphing presently in progress. Ignoring mode change.')
+            return
+
         old_mode = self.current_mode
         self.current_mode = new_mode
         self._cancel_timer()
@@ -156,24 +159,24 @@ class MorphingControlNode(Node):
             f'Mode Changed: {names.get(old_mode, "INIT")} → {names.get(new_mode, str(new_mode))}')
 
         # Handle transitions to MORPH
-        if new_mode == 1:  # MORPH
-            if old_mode == 2:  # UGV
-                self.get_logger().info('Previous mode was UGV. Triggering UAV sequence...')
-                self._start_sequence(UAV_STEPS)
-            elif old_mode == 0:  # UAV
-                self.get_logger().info('Previous mode was UAV. Triggering UGV sequence...')
-                self._start_sequence(UGV_STEPS)
-            else:
-                self.get_logger().warn(
-                    f'MORPH mode set but old_mode is {old_mode}. No sequence triggered.')
-                self.get_logger().warn('--- Position comparison vs UGV_HOME ---')
-                self._log_position_comparison(UGV_HOME, 'UGV_HOME')
-                self.get_logger().warn('--- Position comparison vs UAV_HOME ---')
-                self._log_position_comparison(UAV_HOME, 'UAV_HOME')
+        if new_mode == 1 and old_mode == 2:  # UGV to MORPH
+            self.get_logger().info('Previous mode was UGV. Triggering UAV sequence...')
+            self._start_sequence(UAV_STEPS)
+        elif new_mode == 1 and old_mode == 0:  # UAV to MORPH
+            self.get_logger().info('Previous mode was UAV. Triggering UGV sequence...')
+            self._start_sequence(UGV_STEPS)
+        elif new_mode == 1:
+            self.get_logger().warn(
+                f'MORPH mode set but old_mode is {old_mode}. No sequence triggered.')
+            self.get_logger().warn('--- Position comparison vs UGV_HOME ---')
+            self._log_position_comparison(UGV_HOME, 'UGV_HOME')
+            self.get_logger().warn('--- Position comparison vs UAV_HOME ---')
+            self._log_position_comparison(UAV_HOME, 'UAV_HOME')
 
     # ------------------------------------------------------------------ #
 
     def _start_sequence(self, steps):
+        self.is_morphing = True
         self._active_sequence = steps
         self._seq_step = 0
         self._next_step()
@@ -184,6 +187,7 @@ class MorphingControlNode(Node):
         self._cancel_timer()
         if self._seq_step >= len(self._active_sequence):
             self.get_logger().info('Sequence complete ')
+            self.is_morphing = False
             # _hold_timer will now keep re-publishing _last_published_positions
             # so servos remain stiff at the final position.
             return
@@ -197,6 +201,7 @@ class MorphingControlNode(Node):
             self._timer = self.create_timer(STEP_DELAY, self._next_step)
         else:
             self.get_logger().info('Sequence complete ')
+            self.is_morphing = False
             # _hold_timer will now keep re-publishing _last_published_positions
 
 
