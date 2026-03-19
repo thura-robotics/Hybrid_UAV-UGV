@@ -38,3 +38,19 @@ Hnin Ei San
 
 ## License
 MIT
+
+
+
+## To install for uav
+
+<!-- mav ros -->
+sudo apt update
+sudo apt install ros-humble-mavros ros-humble-mavros-extras ros-humble-mavros-msgs
+
+<!-- Install GeographicLib Datasets -->
+wget -qO- https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh | sudo bash
+
+<!-- MicroXRCEAgent -->
+MicroXRCEAgent serial --dev /dev/ttyUSB0 -b 921600
+MicroXRCEAgent udp4 -p 8888
+
