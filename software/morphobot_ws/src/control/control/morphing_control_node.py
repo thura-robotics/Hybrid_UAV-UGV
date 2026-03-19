@@ -19,7 +19,7 @@ from std_msgs.msg import Float64MultiArray, Float32MultiArray
 from sensor_msgs.msg import JointState
 
 STEP_DELAY = 3.0            # seconds between sequence steps
-MATCH_THRESHOLD = 0.077     # ~50 ticks (50/4096 * 2π)
+MATCH_THRESHOLD = 0.090     # ~90 ticks (90/4096 * 2π)
 HOLD_PUBLISH_RATE = 0.5     # seconds — re-publish interval to keep servos from going limp
 
 # Joint Names mapped to indices in UAV/UGV arrays
@@ -27,7 +27,8 @@ JOINTS = ['hip_FL', 'ankle_FL', 'hip_BL', 'ankle_BL', 'hip_FR', 'ankle_FR', 'hip
 HOME      = [2048, 2875, 2048, 1217, 2048, 1327, 2048, 2865]
 
 UAV_STEP1 = [2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048]
-UAV_HOME= [ 1046, 3050, 3050, 1046, 3050, 1046,1046, 3050]  
+# UAV_HOME= [ 1046, 3050, 3050, 1046, 3050, 1046,1046, 3050] 
+UAV_HOME= [ 990, 3050, 3080, 990, 3050, 1046,990, 3050]  
 UAV_STEPS = [UAV_STEP1,UAV_HOME]
 
 UGV_STEP1 = [ 2048, 2048, 2048, 2048, 2048, 2048,2048, 2048] 
@@ -156,15 +157,15 @@ class MorphingControlNode(Node):
 
         # Handle transitions to MORPH
         if new_mode == 1:  # MORPH
-            if self._is_at_position(UGV_HOME):
-                self.get_logger().info('Detected UGV_HOME state. Triggering UAV sequence...')
+            if old_mode == 2:  # UGV
+                self.get_logger().info('Previous mode was UGV. Triggering UAV sequence...')
                 self._start_sequence(UAV_STEPS)
-            elif self._is_at_position(UAV_HOME):
-                self.get_logger().info('Detected UAV_HOME state. Triggering UGV sequence...')
+            elif old_mode == 0:  # UAV
+                self.get_logger().info('Previous mode was UAV. Triggering UGV sequence...')
                 self._start_sequence(UGV_STEPS)
             else:
                 self.get_logger().warn(
-                    'MORPH mode set but robot is not in a known HOME position. No sequence triggered.')
+                    f'MORPH mode set but old_mode is {old_mode}. No sequence triggered.')
                 self.get_logger().warn('--- Position comparison vs UGV_HOME ---')
                 self._log_position_comparison(UGV_HOME, 'UGV_HOME')
                 self.get_logger().warn('--- Position comparison vs UAV_HOME ---')
