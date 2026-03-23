@@ -216,10 +216,9 @@ class UAVControlNode(Node):
                     self.get_logger().warn("Cannot arm: FCU not connected")
                     return
 
-                # 2. Ensure correct mode first
-                if self.fc_mode != "MANUAL":
-                    self.get_logger().warn(f"Not in MANUAL mode (current: {self.fc_mode})")
-                    self.set_manual_mode()
+               
+                if self.fc_mode != "POSCTL":
+                    self.get_logger().warn(f"Cannot arm: must be in POSITION mode first (current: {self.fc_mode})")
                     return
 
                 # 3. Avoid duplicate arm

@@ -173,3 +173,8 @@ colcon build
 MPC_LAND_ALT1 = 1.0
 MPC_LAND_ALT2 = 0.35
 MPC_LAND_SPEED = 0.4
+
+
+make px4_sitl gz_morphobot
+make clean
+rm -rf build/
