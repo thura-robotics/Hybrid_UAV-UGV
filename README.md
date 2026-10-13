@@ -17,9 +17,9 @@ This project develops a **transformable hybrid UAV-UGV platform** capable of aer
 ## 👥 Team Structure
 | Role | Responsibility |
 |----|---------------|
-| Hnin Ei San | ROS 2, perception, vision, locomotion |
+| Hnin Ei San | ROS 2, PX4, Skydroid, low-level, firmware  |
 | Thura Zaw | Schematics, PCB, power systems |
-| Lamin Myat | PX4, Skydroid, low-level, firmware |
+| Lamin Myat | Perception, vision|
 | Swan Pyae Sone | CAD, FEA, manufacturing |
 
 ---
