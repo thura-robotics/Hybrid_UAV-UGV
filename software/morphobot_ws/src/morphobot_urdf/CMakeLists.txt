@@ -17,6 +17,11 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  scripts/sim_morph.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

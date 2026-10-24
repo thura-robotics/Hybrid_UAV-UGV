@@ -1,0 +1,42 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+    velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+
+joint_state_broadcaster:
+  ros__parameters:
+    publish_rate: 50.0
+
+
+position_controller:
+  ros__parameters:
+    joints:
+      - hip_FL
+      - hip_FR
+      - hip_BL
+      - hip_BR
+      - ankle_FL
+      - ankle_FR
+      - ankle_BL
+      - ankle_BR
+
+    interface_name: position
+
+
+velocity_controller:
+  ros__parameters:
+    joints:
+      - drive_FL
+      - drive_FR
+      - drive_BL
+      - drive_BR
+    interface_name: velocity

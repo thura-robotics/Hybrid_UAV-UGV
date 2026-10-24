@@ -18,12 +18,23 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ./launch_mavros.sh
 ```
 
+source install/setup.bash && ros2 launch morphobot_urdf view_robot.launch.py
 
-
-ros2 launch morphobot_urdf view_robot.launch.py
-
-
+export ROS_LOCALHOST_ONLY=1
+source install/setup.bash
 ros2 launch morphobot_urdf gazebo_sim.launch.py
+
+ros2 run morphobot_urdf sim_morph.py ugv
+
+
+
+export ROS_LOCALHOST_ONLY=1
+source install/setup.bash
+./morph.sh 1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0
+
+echo "export ROS_LOCALHOST_ONLY=1" >> ~/.bashrc
+
+source install/setup.bash && ros2 launch morphobot_urdf gazebo_sim.launch.py
 
 cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 ./launch_all.sh
@@ -40,6 +51,31 @@ cd /home/eisan/Hybrid_UAV-UGV/software/morphobot_ws
 
 
 source install/setup.bash && ros2 launch morphobot_urdf view_robot.launch.py
+
+
+
+
+export ROS_LOCALHOST_ONLY=1
+source install/setup.bash
+ros2 run morphobot_urdf sim_morph.py ugv
+
+cd ~/Hybrid_UAV-UGV/software/morphobot_ws
+colcon build --packages-select morphobot_urdf --symlink-install
+source install/setup.bash
+
+rm -rf build/morphobot_urdf install/morphobot_urdf && colcon build --packages-select morphobot_urdf --symlink-install
+
+
+
+export ROS_LOCALHOST_ONLY=1
+source install/setup.bash
+ros2 launch morphobot_urdf gazebo_sim.launch.py
+
+
+source install/setup.bash
+ros2 run morphobot_urdf sim_morph.py ugv
+
+
 
 
 # Msource /opt/ros/humble/setup.bash
@@ -178,3 +214,7 @@ MPC_LAND_SPEED = 0.4
 make px4_sitl gz_morphobot
 make clean
 rm -rf build/
+
+
+export ROS_LOCALHOST_ONLY=1
+source install/setup.bash && ros2 launch morphobot_urdf view_robot.launch.py

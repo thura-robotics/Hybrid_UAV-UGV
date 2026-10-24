@@ -37,7 +37,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("morphobot_urdf"),
                     "urdf",
-                    "hybrid_robot.urdf.xacro",
+                    "hybrid_robot_hw.urdf.xacro",
                 ]
             ),
         ]
